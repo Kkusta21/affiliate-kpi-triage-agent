@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 llm = ["langchain>=0.3", "langchain-openai>=0.2", "langchain-anthropic>=0.2"]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
 
 [project.scripts]
 triage = "triage_agent.cli:main"
@@ -36,6 +36,24 @@ select = ["E", "F", "W"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
+
+[tool.mypy]
+# Checked: src/ only. Tests use dynamic fixtures and scripted fakes on purpose.
+files = ["src"]
+python_version = "3.10"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+
+[[tool.mypy.overrides]]
+# Optional extra (pip install -e ".[llm]"), imported lazily in make_llm.
+module = ["langchain", "langchain.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

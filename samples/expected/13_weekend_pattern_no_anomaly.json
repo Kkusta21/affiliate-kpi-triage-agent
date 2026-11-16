@@ -33,6 +33,7 @@
       "hours_expected": 21,
       "clicks_total": 6597,
       "conversions_total": 171,
+      "revenue_total_usd": 5985.0,
       "clicks_per_hour": 314.1,
       "conversions_per_hour": 8.14,
       "conversion_rate": 0.0259,
@@ -44,6 +45,7 @@
       "hours_expected": 3,
       "clicks_total": 599,
       "conversions_total": 9,
+      "revenue_total_usd": 315.0,
       "clicks_per_hour": 199.7,
       "conversions_per_hour": 3.0,
       "conversion_rate": 0.015,
@@ -66,9 +68,22 @@
       "missing_baseline_hours": 0
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "revenue",
+      "method": "threshold_only",
+      "result": "not_tested",
+      "p_value": null,
+      "alpha": null,
+      "statistic": null,
+      "observed": 105.0,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": "no statistical test for this metric; judged on the business threshold and volume"
+    },
     "statistically_significant": null,
     "signal_strength": "none",
     "significant": false,
+    "test_inconclusive": false,
     "traffic_spike": false,
     "conversions_stopped": false,
     "seasonal": {
@@ -105,5 +120,5 @@
       "reason": "'kpi_snapshot' is the next check needed for a verdict."
     }
   ],
-  "summary": "Triage ALT-1013 | CMP-110 Office furniture B2B DE\nRoot cause: no_anomaly | severity: info | confidence: 0.90\nKPI: revenue -63.2% vs baseline (conversion rate 2.59% -> 1.50%, 599 clicks in the last 3h). No direct revenue loss measured in this window.\n     Same hours on the previous 4 weekend days: 0.0%. Signal strength: none.\nWhy:\n  - revenue is -63.2% vs the last 21 hours, but 0.0% vs the same hours on the previous 4 weekend days. This looks like the normal pattern for this time, not a drop.\nNo incident opened and no alert drafted.\nSteps: kpi_snapshot"
+  "summary": "Triage ALT-1013 | CMP-110 Office furniture B2B DE\nRoot cause: no_anomaly | severity: info | confidence: 0.90\nKPI: revenue -63.2% vs baseline (conversion rate 2.59% -> 1.50%, 599 clicks in the last 3h). No direct revenue loss measured in this window.\n     Test: not tested (no statistical test for this metric; judged on the business threshold and volume).\n     Same hours on the previous 4 weekend days: 0.0%. Signal strength: none.\nWhy:\n  - revenue is -63.2% vs the last 21 hours, but 0.0% vs the same hours on the previous 4 weekend days. This looks like the normal pattern for this time, not a drop.\nNo incident opened and no alert drafted.\nSteps: kpi_snapshot"
 }

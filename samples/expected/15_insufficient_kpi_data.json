@@ -15,8 +15,8 @@
   "other_findings": [],
   "stop_reason": "decided from the KPI snapshot alone",
   "recommended_actions": [
-    "Check the tracker export for the missing hours.",
-    "Re-run triage once the KPI data for the alert window is complete."
+    "Check the tracker export for missing hours or missing conversion data.",
+    "Re-run triage once more KPI data for the alert window is available."
   ],
   "est_revenue_loss_per_hour_usd": 0.0,
   "llm_usage": {
@@ -36,6 +36,7 @@
       "hours_expected": 21,
       "clicks_total": 5577,
       "conversions_total": 234,
+      "revenue_total_usd": 6552.0,
       "clicks_per_hour": 309.8,
       "conversions_per_hour": 13.0,
       "conversion_rate": 0.042,
@@ -47,6 +48,7 @@
       "hours_expected": 3,
       "clicks_total": 300,
       "conversions_total": 2,
+      "revenue_total_usd": 56.0,
       "clicks_per_hour": 300.0,
       "conversions_per_hour": 2.0,
       "conversion_rate": 0.0067,
@@ -69,9 +71,22 @@
       "missing_baseline_hours": 3
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "conversion_rate",
+      "method": "two_proportion_z",
+      "result": "significant",
+      "p_value": 0.001211,
+      "alpha": 0.01,
+      "statistic": -3.03,
+      "observed": 0.0067,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": ""
+    },
     "statistically_significant": true,
     "signal_strength": "none",
     "significant": false,
+    "test_inconclusive": false,
     "traffic_spike": false,
     "conversions_stopped": false,
     "seasonal": {
@@ -121,7 +136,7 @@
     "to_role": "affiliate_manager",
     "channel": "direct message",
     "subject": "[MEDIUM] CMP-112 Energy switch NL: unknown",
-    "body": "Campaign: CMP-112 Energy switch NL (affiliate Delta Leads, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -84.0% vs baseline. No direct revenue loss measured in this window.\nWhy: KPI history is incomplete (1 of 3 current hours and 18 of 21 baseline hours found, 187 hours of history), so the drop can neither be confirmed nor ruled out.\nSuggested next steps:\n  1. Check the tracker export for the missing hours.\n  2. Re-run triage once the KPI data for the alert window is complete.\nNote: automated triage is not conclusive here, please review the evidence.",
+    "body": "Campaign: CMP-112 Energy switch NL (affiliate Delta Leads, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -84.0% vs baseline. No direct revenue loss measured in this window.\nWhy: KPI history is incomplete (1 of 3 current hours and 18 of 21 baseline hours found, 187 hours of history), so the drop can neither be confirmed nor ruled out.\nSuggested next steps:\n  1. Check the tracker export for missing hours or missing conversion data.\n  2. Re-run triage once more KPI data for the alert window is available.\nNote: automated triage is not conclusive here, please review the evidence.",
     "status": "draft_pending_approval"
   },
   "refused_requests": [],
@@ -145,5 +160,5 @@
       "reason": "Evidence points to unknown; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1015 | CMP-112 Energy switch NL\nRoot cause: unknown | severity: medium | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -84.0% vs baseline (conversion rate 4.20% -> 0.67%, 300 clicks in the last 3h). No direct revenue loss measured in this window.\n     Same hours on the previous 5 weekdays: -84.1%. Signal strength: none.\n     Data gaps: 2 current and 3 baseline hours missing.\nWhy:\n  - KPI history is incomplete (1 of 3 current hours and 18 of 21 baseline hours found, 187 hours of history), so the drop can neither be confirmed nor ruled out.\nRecommended actions (for a human to carry out):\n  1. Check the tracker export for the missing hours.\n  2. Re-run triage once the KPI data for the alert window is complete.\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> runbook_search"
+  "summary": "Triage ALT-1015 | CMP-112 Energy switch NL\nRoot cause: unknown | severity: medium | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -84.0% vs baseline (conversion rate 4.20% -> 0.67%, 300 clicks in the last 3h). No direct revenue loss measured in this window.\n     Test: two_proportion_z, one-sided p = 0.0012 (alpha 0.01): significant.\n     Same hours on the previous 5 weekdays: -84.1%. Signal strength: none.\n     Data gaps: 2 current and 3 baseline hours missing.\nWhy:\n  - KPI history is incomplete (1 of 3 current hours and 18 of 21 baseline hours found, 187 hours of history), so the drop can neither be confirmed nor ruled out.\nRecommended actions (for a human to carry out):\n  1. Check the tracker export for missing hours or missing conversion data.\n  2. Re-run triage once more KPI data for the alert window is available.\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> runbook_search"
 }

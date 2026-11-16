@@ -1,0 +1,968 @@
+{
+ "dataset": {
+  "path": "eval\\dataset.json",
+  "synthetic": true,
+  "cases": 42,
+  "categories": {
+   "conflicting_evidence": 4,
+   "epc": 4,
+   "insufficient_evidence": 5,
+   "landing_page_slow": 2,
+   "landing_page_unavailable": 2,
+   "multiple_causes": 6,
+   "normal_variation": 6,
+   "normal_variation_or_partner": 1,
+   "offer": 3,
+   "seasonal": 2,
+   "tracking": 2,
+   "traffic": 5
+  }
+ },
+ "planner": "offline",
+ "metrics": {
+  "cases": 42,
+  "per_cause": {
+   "landing_page_down": {
+    "support": 8,
+    "tp": 8,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "offer_paused": {
+    "support": 2,
+    "tp": 2,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "offer_cap_reached": {
+    "support": 5,
+    "tp": 5,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "tracking_broken": {
+    "support": 4,
+    "tp": 4,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   },
+   "traffic_quality": {
+    "support": 6,
+    "tp": 3,
+    "fp": 0,
+    "fn": 3,
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.6667
+   },
+   "geo_mismatch": {
+    "support": 3,
+    "tp": 3,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+   }
+  },
+  "causes_without_support": [],
+  "macro_f1": 0.9444,
+  "micro_precision": 1.0,
+  "micro_recall": 0.8929,
+  "micro_f1": 0.9434,
+  "primary_accuracy": 0.9524,
+  "exact_cause_set_match": 0.9286,
+  "correct_abstention_rate": 1.0,
+  "abstention_precision": 0.8462,
+  "false_alarm_rate": 0.0,
+  "missed_incident_rate": 0.0,
+  "severity_accuracy": 1.0,
+  "severity_labelled_cases": 12,
+  "correct_secondary_findings": 4,
+  "expected_secondary_findings": 5,
+  "unsupported_findings": 0,
+  "missed_findings": 3,
+  "missed_but_flagged": 2,
+  "avg_tool_calls": 4.0,
+  "confusion_matrix": {
+   "no_anomaly": {
+    "no_anomaly": 8
+   },
+   "landing_page_down": {
+    "landing_page_down": 8
+   },
+   "unknown": {
+    "unknown": 11
+   },
+   "tracking_broken": {
+    "tracking_broken": 4
+   },
+   "offer_cap_reached": {
+    "offer_cap_reached": 3
+   },
+   "offer_paused": {
+    "offer_paused": 2
+   },
+   "traffic_quality": {
+    "traffic_quality": 2,
+    "unknown": 2
+   },
+   "geo_mismatch": {
+    "geo_mismatch": 2
+   }
+  }
+ },
+ "cases": [
+  {
+   "id": "N01_low_volume",
+   "category": "normal_variation",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "75 clicks in the window. Below the 100-click floor the company acts on, so not an incident.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "N02_small_dip",
+   "category": "normal_variation",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "Conversion rate 4.0% -> 3.0% (-25%). Below the -30% business threshold.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "N03_dip_within_chance",
+   "category": "normal_variation",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "-33% on 360 clicks (12 conversions vs about 18 expected). A gap of this size happens by chance at this volume, so an analyst would wait for more data.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "N04_weekend_pattern",
+   "category": "seasonal",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "Saturday revenue is far below Friday, but equal to the same hours on earlier Saturdays and Sundays. This B2B campaign always halves at weekends.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "N05_epc_payout_noise",
+   "category": "normal_variation",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "EPC is down about 33%, but each of the three hours has a payout per conversion that already occurred in the last day (order sizes vary 0.5x to 2.2x). Three smaller-basket hours in a row is normal for this offer.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "N06_recovered",
+   "category": "normal_variation",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "The monitor fired late. The current three hours are back at the normal rate.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "N07_clicks_up",
+   "category": "normal_variation",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "A clicks alert, but clicks went up 50%. No drop.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "N08_cr_down_epc_stable",
+   "category": "epc",
+   "expected_primary": "no_anomaly",
+   "predicted_primary": "no_anomaly",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "info",
+   "steps": 1,
+   "rationale": "Conversion rate halved but payout per conversion doubled (premium plan push). Revenue per click, which is what this EPC alert watches, is unchanged.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "L01_page_503",
+   "category": "landing_page_unavailable",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down"
+   ],
+   "predicted_causes": [
+    "landing_page_down"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 3,
+   "rationale": "Page returns 503 while clicks keep arriving; conversions stopped.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "L02_page_404",
+   "category": "landing_page_unavailable",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down"
+   ],
+   "predicted_causes": [
+    "landing_page_down"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 3,
+   "rationale": "Page moved in a site restructure and returns 404. Zero pixel events follow from the missing page, so tracking is not a separate cause.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "L03_page_500_epc_alert",
+   "category": "epc",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down"
+   ],
+   "predicted_causes": [
+    "landing_page_down"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 3,
+   "rationale": "EPC alert. The page throws 500 errors, so almost no visitor can convert.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "S01_slow_page",
+   "category": "landing_page_slow",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down"
+   ],
+   "predicted_causes": [
+    "landing_page_down"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 6,
+   "rationale": "Page loads in 14 s, over the 10 s runbook limit. A 55% conversion drop on mobile-heavy traffic is what a 14 s load produces. Nothing else is wrong.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "S02_page_9s",
+   "category": "landing_page_slow",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [
+    "landing_page_down"
+   ],
+   "expected_severity": null,
+   "predicted_severity": "critical",
+   "steps": 6,
+   "rationale": "9 s load is under the runbook's 10 s limit and does not explain a 55% drop on its own. Real drop, no confirmed cause: escalate to a human, with the slow page as a lead.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "T01_pixel_removed",
+   "category": "tracking",
+   "expected_primary": "tracking_broken",
+   "predicted_primary": "tracking_broken",
+   "expected_causes": [
+    "tracking_broken"
+   ],
+   "predicted_causes": [
+    "tracking_broken"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "critical",
+   "steps": 5,
+   "rationale": "Deploy removed the pixel: page is up, pixel absent, zero pixel events.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "T02_postbacks_missing",
+   "category": "tracking",
+   "expected_primary": "tracking_broken",
+   "predicted_primary": "tracking_broken",
+   "expected_causes": [
+    "tracking_broken"
+   ],
+   "predicted_causes": [
+    "tracking_broken"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "critical",
+   "steps": 6,
+   "rationale": "Pixel fires 46 times but only 14 postbacks arrive (ratio 0.3) with 31 postback errors. The advertiser's server-to-server callback is failing.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "T03_tracker_vs_page_conflict",
+   "category": "conflicting_evidence",
+   "expected_primary": "tracking_broken",
+   "predicted_primary": "tracking_broken",
+   "expected_causes": [
+    "tracking_broken"
+   ],
+   "predicted_causes": [
+    "tracking_broken"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "critical",
+   "steps": 5,
+   "rationale": "Conflict: the page HTML still contains the pixel tag, but the tracker received zero pixel events on 1200 clicks. The tracker is the source of truth for fired events (the tag can be present and broken), so tracking is broken.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "O01_cap_reached",
+   "category": "offer",
+   "expected_primary": "offer_cap_reached",
+   "predicted_primary": "offer_cap_reached",
+   "expected_causes": [
+    "offer_cap_reached"
+   ],
+   "predicted_causes": [
+    "offer_cap_reached"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "medium",
+   "predicted_severity": "medium",
+   "steps": 4,
+   "rationale": "Daily cap 300/300. The advertiser rejects further conversions, which also explains the low postback count (rejected conversions send no postback). An expected business event.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "O02_offer_paused",
+   "category": "offer",
+   "expected_primary": "offer_paused",
+   "predicted_primary": "offer_paused",
+   "expected_causes": [
+    "offer_paused"
+   ],
+   "predicted_causes": [
+    "offer_paused"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "medium",
+   "predicted_severity": "medium",
+   "steps": 4,
+   "rationale": "Advertiser paused the offer this morning.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "O03_cap_near",
+   "category": "offer",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [
+    "offer_cap_reached"
+   ],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "Cap is 93% used but not reached, so conversions are still accepted. Not the cause; real drop with no confirmed cause.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "Q01_bot_source",
+   "category": "traffic",
+   "expected_primary": "traffic_quality",
+   "predicted_primary": "traffic_quality",
+   "expected_causes": [
+    "traffic_quality"
+   ],
+   "predicted_causes": [
+    "traffic_quality"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "high",
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "sub_778 sends 65% of clicks with bot score 0.9. Clicks nearly tripled and conversions stayed flat.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "Q02_geo_mismatch",
+   "category": "traffic",
+   "expected_primary": "geo_mismatch",
+   "predicted_primary": "geo_mismatch",
+   "expected_causes": [
+    "geo_mismatch"
+   ],
+   "predicted_causes": [
+    "geo_mismatch"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "55% of traffic from Romania, which the offer does not accept.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "Q03_spike_no_flagged_source",
+   "category": "traffic",
+   "expected_primary": "traffic_quality",
+   "predicted_primary": "unknown",
+   "expected_causes": [
+    "traffic_quality"
+   ],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [
+    "traffic_quality"
+   ],
+   "expected_severity": null,
+   "predicted_severity": "medium",
+   "steps": 6,
+   "rationale": "Clicks up 155% from six new sub sources, each with a mediocre bot score (0.35), and conversions flat. No single source crosses a limit, but the surge of low-intent traffic is the cause. HARD for rules that look for one bad source.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [
+    "traffic_quality"
+   ],
+   "primary_correct": false
+  },
+  {
+   "id": "Q04_borderline_bot_source",
+   "category": "traffic",
+   "expected_primary": "traffic_quality",
+   "predicted_primary": "unknown",
+   "expected_causes": [
+    "traffic_quality"
+   ],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [
+    "traffic_quality"
+   ],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "sub_55 sends 45% of clicks with bot score 0.65, just under the 0.7 limit. It is the only anomaly and 45% x 0.65 of non-converting traffic matches the 35% drop. Borderline, labelled as the cause.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [
+    "traffic_quality"
+   ],
+   "primary_correct": false
+  },
+  {
+   "id": "Q05_borderline_geo_too_small",
+   "category": "traffic",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [
+    "geo_mismatch"
+   ],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "28% disallowed geo is near the limit, but cannot explain a 60% drop. Real drop, no cause that accounts for it: escalate.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "E01_payout_cut",
+   "category": "epc",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "Conversion rate unchanged, payout per conversion halved: the advertiser cut the payout. A real EPC drop with no cause in the automated checks (payout terms are not monitored): escalate.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "E02_epc_geo",
+   "category": "epc",
+   "expected_primary": "geo_mismatch",
+   "predicted_primary": "geo_mismatch",
+   "expected_causes": [
+    "geo_mismatch"
+   ],
+   "predicted_causes": [
+    "geo_mismatch"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "critical",
+   "steps": 6,
+   "rationale": "60% of traffic from Poland, which the offer does not accept; those clicks earn nothing, so EPC falls by more than half.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "E03_epc_small_sample",
+   "category": "insufficient_evidence",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "medium",
+   "steps": 2,
+   "rationale": "A high-payout offer with about one conversion every two to three hours. Three hours with no conversion says almost nothing about EPC. Neither confirmable nor dismissable: abstain.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "W01_weekend_real_outage",
+   "category": "seasonal",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down"
+   ],
+   "predicted_causes": [
+    "landing_page_down"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 3,
+   "rationale": "Saturday, so traffic is normally half. But conversions are zero even against earlier weekends, and the page returns 503.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "I01_sparse_export",
+   "category": "insufficient_evidence",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "medium",
+   "steps": 2,
+   "rationale": "Two of the three current hours are missing from the tracker export. One hour cannot confirm or rule out a drop.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "I02_tracker_down",
+   "category": "insufficient_evidence",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [
+    "tracking_broken"
+   ],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "Real drop, page/offer/traffic healthy, tracking cannot be checked. Tracking is the likely suspect but unverified: escalate rather than guess.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "I03_probe_unreachable",
+   "category": "insufficient_evidence",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [
+    "landing_page_down"
+   ],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "The uptime probe times out on every attempt. That may be the page or the probe's network. Everything else is healthy: escalate with the page as the lead.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "I04_no_history",
+   "category": "insufficient_evidence",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "medium",
+   "steps": 2,
+   "rationale": "New campaign, no KPI history in the tracker yet. Nothing to compare with.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "M01_slow_page_and_cap",
+   "category": "multiple_causes",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down",
+    "offer_cap_reached"
+   ],
+   "predicted_causes": [
+    "landing_page_down",
+    "offer_cap_reached"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 4,
+   "rationale": "Page takes 15 s AND the cap is reached. Both cost conversions; the page goes first by policy.",
+   "correct_secondary": [
+    "offer_cap_reached"
+   ],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "M02_bots_and_geo",
+   "category": "multiple_causes",
+   "expected_primary": "traffic_quality",
+   "predicted_primary": "traffic_quality",
+   "expected_causes": [
+    "geo_mismatch",
+    "traffic_quality"
+   ],
+   "predicted_causes": [
+    "geo_mismatch",
+    "traffic_quality"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "One source sends 54% of clicks with bot score 0.85, and it sends them from Romania, which the offer does not accept. Two separate problems for the affiliate manager.",
+   "correct_secondary": [
+    "geo_mismatch"
+   ],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "M03_cap_and_bots",
+   "category": "multiple_causes",
+   "expected_primary": "offer_cap_reached",
+   "predicted_primary": "offer_cap_reached",
+   "expected_causes": [
+    "offer_cap_reached",
+    "traffic_quality"
+   ],
+   "predicted_causes": [
+    "offer_cap_reached"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "medium",
+   "steps": 4,
+   "rationale": "The cap is reached AND a bot source floods the campaign (which also burned the cap). Both need action. HARD: the agent stops at the capped offer and never looks at traffic.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [
+    "traffic_quality"
+   ],
+   "primary_correct": true
+  },
+  {
+   "id": "M04_paused_and_capped",
+   "category": "multiple_causes",
+   "expected_primary": "offer_paused",
+   "predicted_primary": "offer_paused",
+   "expected_causes": [
+    "offer_cap_reached",
+    "offer_paused"
+   ],
+   "predicted_causes": [
+    "offer_cap_reached",
+    "offer_paused"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "medium",
+   "steps": 4,
+   "rationale": "The advertiser paused the offer after it hit its cap. Both facts matter for the conversation with the advertiser.",
+   "correct_secondary": [
+    "offer_cap_reached"
+   ],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "M05_postbacks_and_bots",
+   "category": "multiple_causes",
+   "expected_primary": "tracking_broken",
+   "predicted_primary": "tracking_broken",
+   "expected_causes": [
+    "tracking_broken",
+    "traffic_quality"
+   ],
+   "predicted_causes": [
+    "tracking_broken",
+    "traffic_quality"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "critical",
+   "steps": 6,
+   "rationale": "Postbacks are failing (ratio 0.3) AND a bot source sends 54% of clicks. A weak postback ratio explains only part of the drop, so the traffic problem is real too.",
+   "correct_secondary": [
+    "traffic_quality"
+   ],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "M06_page_down_pixel_absent",
+   "category": "multiple_causes",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down"
+   ],
+   "predicted_causes": [
+    "landing_page_down"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 3,
+   "rationale": "Page is down; the error page has no pixel and the tracker sees no pixel events. Those are consequences of the outage, not a second cause. Reporting tracking_broken would be wrong.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "C01_bot_source_too_small",
+   "category": "conflicting_evidence",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "high",
+   "steps": 6,
+   "rationale": "One source is clearly bots (0.95) but sends only 8% of clicks; it cannot explain a 50% drop. Real drop, no explaining cause: escalate.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "C02_note_points_wrong_way",
+   "category": "conflicting_evidence",
+   "expected_primary": "offer_cap_reached",
+   "predicted_primary": "offer_cap_reached",
+   "expected_causes": [
+    "offer_cap_reached"
+   ],
+   "predicted_causes": [
+    "offer_cap_reached"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "medium",
+   "predicted_severity": "medium",
+   "steps": 4,
+   "rationale": "The requester blames tracking, but the pixel fires normally and the cap is reached. The note is wrong; the evidence decides.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "C03_injection_in_note",
+   "category": "conflicting_evidence",
+   "expected_primary": "landing_page_down",
+   "predicted_primary": "landing_page_down",
+   "expected_causes": [
+    "landing_page_down"
+   ],
+   "predicted_causes": [
+    "landing_page_down"
+   ],
+   "flagged_unconfirmed": [],
+   "expected_severity": "critical",
+   "predicted_severity": "critical",
+   "steps": 3,
+   "rationale": "Prompt injection in the note. The page is down; the note must change nothing.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  },
+  {
+   "id": "R01_affiliate_stopped_sending",
+   "category": "normal_variation_or_partner",
+   "expected_primary": "unknown",
+   "predicted_primary": "unknown",
+   "expected_causes": [],
+   "predicted_causes": [],
+   "flagged_unconfirmed": [],
+   "expected_severity": null,
+   "predicted_severity": "critical",
+   "steps": 6,
+   "rationale": "Revenue -80% because clicks fell 80%; conversion rate is normal and every check is healthy. The affiliate cut its volume. Not a listed cause: escalate to the affiliate manager.",
+   "correct_secondary": [],
+   "unsupported": [],
+   "missed": [],
+   "primary_correct": true
+  }
+ ]
+}

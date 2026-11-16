@@ -18,6 +18,7 @@ calls), so FastAPI runs it in its thread pool and the event loop stays free.
 Authorization happens here, outside the model: set TRIAGE_API_KEY to require the header
 `X-API-Key` on every data endpoint. When it is unset the API is open (local demo mode).
 """
+
 from __future__ import annotations
 
 import json
@@ -41,7 +42,7 @@ app = FastAPI(
     title="Affiliate KPI triage agent",
     version="0.2.0",
     description="Triage a KPI drop alert: investigate, decide with rules, open an incident, draft an alert. "
-                "Read-only towards campaigns. Alerts are drafts that wait for human approval.",
+    "Read-only towards campaigns. Alerts are drafts that wait for human approval.",
 )
 _STATIC = Path(__file__).parent / "static" / "index.html"
 
@@ -78,15 +79,26 @@ def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
         raise HTTPException(status_code=401, detail="missing or invalid X-API-Key header")
 
 
-_EXAMPLE = {"alert_id": "ALT-1001", "campaign_id": "CMP-101", "metric": "conversion_rate",
-            "observed_at": "2026-11-16T12:00:00Z", "note": "Conversions stopped around 10:00 UTC."}
+_EXAMPLE = {
+    "alert_id": "ALT-1001",
+    "campaign_id": "CMP-101",
+    "metric": "conversion_rate",
+    "observed_at": "2026-11-16T12:00:00Z",
+    "note": "Conversions stopped around 10:00 UTC.",
+}
 
 
-@app.post("/triage", response_model=TriageResult, dependencies=[Depends(require_api_key)],
-          responses={422: {"model": TriageResult, "description": "Alert failed validation (status: rejected)"},
-                     404: {"model": TriageResult, "description": "Campaign does not exist (status: rejected)"},
-                     500: {"model": TriageResult, "description": "Internal error (status: failed)"},
-                     401: {"description": "Missing or invalid API key"}})
+@app.post(
+    "/triage",
+    response_model=TriageResult,
+    dependencies=[Depends(require_api_key)],
+    responses={
+        422: {"model": TriageResult, "description": "Alert failed validation (status: rejected)"},
+        404: {"model": TriageResult, "description": "Campaign does not exist (status: rejected)"},
+        500: {"model": TriageResult, "description": "Internal error (status: failed)"},
+        401: {"description": "Missing or invalid API key"},
+    },
+)
 def triage(alert: Any = Body(..., examples=[_EXAMPLE])) -> JSONResponse:
     """Run one alert through the workflow. The body is validated inside the workflow (strict
     schema, unknown fields rejected), so every caller gets the same per-field error list."""
@@ -131,9 +143,14 @@ def health() -> JSONResponse:
     except (OSError, sqlite3.Error) as exc:
         store = f"error: {type(exc).__name__}"
         problems.append("incident store")
-    body = Health(status="degraded" if problems else "ok", llm_mode=os.getenv("TRIAGE_LLM", "offline"),
-                  page_probe=SETTINGS.page_probe, campaigns=campaigns, incident_store=store,
-                  auth_required=bool(os.getenv("TRIAGE_API_KEY")))
+    body = Health(
+        status="degraded" if problems else "ok",
+        llm_mode=os.getenv("TRIAGE_LLM", "offline"),
+        page_probe=SETTINGS.page_probe,
+        campaigns=campaigns,
+        incident_store=store,
+        auth_required=bool(os.getenv("TRIAGE_API_KEY")),
+    )
     return JSONResponse(status_code=503 if problems else 200, content=body.model_dump())
 
 

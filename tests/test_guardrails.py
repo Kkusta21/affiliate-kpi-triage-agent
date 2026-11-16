@@ -1,5 +1,4 @@
-from triage_agent.guardrails import (REMOVED, find_refused_requests, looks_like_injection,
-                                     sanitize_untrusted, validate_alert)
+from triage_agent.guardrails import REMOVED, find_refused_requests, looks_like_injection, sanitize_untrusted, validate_alert
 
 from conftest import alert
 
@@ -10,8 +9,9 @@ def test_valid_alert_passes():
 
 
 def test_invalid_alert_lists_every_bad_field():
-    parsed, rejection = validate_alert({"alert_id": "x", "campaign_id": "CMP-1; DROP TABLE", "metric": "vibes",
-                                        "observed_at": "yesterday", "extra": 1})
+    parsed, rejection = validate_alert(
+        {"alert_id": "x", "campaign_id": "CMP-1; DROP TABLE", "metric": "vibes", "observed_at": "yesterday", "extra": 1}
+    )
     assert parsed is None and rejection["code"] == "invalid_input"
     assert {e["field"] for e in rejection["errors"]} == {"alert_id", "campaign_id", "metric", "observed_at", "extra"}
 

@@ -56,6 +56,7 @@
       "hours_expected": 21,
       "clicks_total": 8821,
       "conversions_total": 357,
+      "revenue_total_usd": 6426.0,
       "clicks_per_hour": 420.0,
       "conversions_per_hour": 17.0,
       "conversion_rate": 0.0405,
@@ -67,6 +68,7 @@
       "hours_expected": 3,
       "clicks_total": 1260,
       "conversions_total": 3,
+      "revenue_total_usd": 54.0,
       "clicks_per_hour": 420.0,
       "conversions_per_hour": 1.0,
       "conversion_rate": 0.0024,
@@ -89,9 +91,22 @@
       "missing_baseline_hours": 0
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "conversion_rate",
+      "method": "two_proportion_z",
+      "result": "significant",
+      "p_value": 0.0,
+      "alpha": 0.01,
+      "statistic": -6.82,
+      "observed": 0.0024,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": ""
+    },
     "statistically_significant": true,
     "signal_strength": "strong",
     "significant": true,
+    "test_inconclusive": false,
     "traffic_spike": false,
     "conversions_stopped": false,
     "seasonal": {
@@ -186,5 +201,5 @@
       "reason": "Evidence points to landing_page_down; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1009 | CMP-101 VPN annual plan DE\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: conversion_rate -94.1% vs baseline (conversion rate 4.05% -> 0.24%, 1260 clicks in the last 3h). Estimated loss: $288/hour.\n     Same hours on the previous 5 weekdays: -94.1%. Signal strength: strong.\nWhy:\n  - Landing page returned HTTP 503 (server error) in 30012 ms. Clicks are still arriving, so every visitor hits a broken page.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nFlags: prompt_injection_suspected_in_note\nSteps: kpi_snapshot -> landing_page_check -> runbook_search"
+  "summary": "Triage ALT-1009 | CMP-101 VPN annual plan DE\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: conversion_rate -94.1% vs baseline (conversion rate 4.05% -> 0.24%, 1260 clicks in the last 3h). Estimated loss: $288/hour.\n     Test: two_proportion_z, one-sided p < 0.0001 (alpha 0.01): significant.\n     Same hours on the previous 5 weekdays: -94.1%. Signal strength: strong.\nWhy:\n  - Landing page returned HTTP 503 (server error) in 30012 ms. Clicks are still arriving, so every visitor hits a broken page.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nFlags: prompt_injection_suspected_in_note\nSteps: kpi_snapshot -> landing_page_check -> runbook_search"
 }

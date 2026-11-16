@@ -6,6 +6,7 @@ Each sample runs with a fresh in-memory incident store, no trace files and no re
 "Verdict agreement" compares status, root cause and severity with samples/expected/.
 The live column is skipped when TRIAGE_LLM is unset or "offline", or when its API key is missing.
 """
+
 from __future__ import annotations
 
 import json
@@ -33,8 +34,13 @@ def run_mode(spec: str) -> dict:
     started = time.perf_counter()
     for path in ALERTS:
         expected = json.loads((ROOT / "samples" / "expected" / path.name).read_text())
-        result = run_triage(json.loads(path.read_text()), llm=make_llm(spec), incidents=IncidentStore(":memory:"),
-                            tracer=Tracer(None), sleep=lambda _: None).model_dump(mode="json")
+        result = run_triage(
+            json.loads(path.read_text()),
+            llm=make_llm(spec),
+            incidents=IncidentStore(":memory:"),
+            tracer=Tracer(None),
+            sleep=lambda _: None,
+        ).model_dump(mode="json")
         if verdict_of(result) == verdict_of(expected):
             agree += 1
         else:
@@ -45,10 +51,13 @@ def run_mode(spec: str) -> dict:
             fallbacks += "planner_fallback_used" in result["guardrail_flags"]
             hyp_agree += result["llm_hypothesis"] == result["root_cause"]
             if spec != "offline" and result["llm_hypothesis"] != result["root_cause"]:
-                misses.append(f"{path.stem}: model hypothesis {result['llm_hypothesis']!r}, "
-                              f"rules verdict {result['root_cause']!r} (verdict unchanged, run flagged for review)")
-            llm_failures += any(flag in result["guardrail_flags"]
-                                for flag in ("hypothesis_unavailable", "analyst_note_unavailable"))
+                misses.append(
+                    f"{path.stem}: model hypothesis {result['llm_hypothesis']!r}, "
+                    f"rules verdict {result['root_cause']!r} (verdict unchanged, run flagged for review)"
+                )
+            llm_failures += any(
+                flag in result["guardrail_flags"] for flag in ("hypothesis_unavailable", "analyst_note_unavailable")
+            )
     seconds = time.perf_counter() - started
     return {
         "Verdict agreement with expected": f"{agree}/{len(ALERTS)}",

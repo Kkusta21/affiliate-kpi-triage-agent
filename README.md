@@ -117,9 +117,32 @@ The first tool decides whether there is anything to investigate. It uses hourly,
 | What if buckets are missing? | Rates are per hour of data found, so a gap is not read as zero traffic. Fewer than 2 current or 6 baseline hours means "insufficient data": the verdict is `unknown`, never "healthy" |
 | What if the baseline is zero? | The change is `null`, not 0%. A zero denominator never produces a number |
 | Is there enough volume? | At least 100 clicks in the window and in the baseline |
-| Is the change more than chance? | Two-proportion z test on conversions over clicks (rate metrics). Below 2.58 standard errors the drop is reported as within chance |
+| Is the change more than chance? | A one-sided test chosen by alert metric, at alpha 0.01 (see below). Not significant means "within chance": `no_anomaly` |
+| Is it big enough to matter? | A separate business threshold: -30%. A statistically real -15% dip on high volume is not an incident. Both conditions must hold |
+| What if the test cannot run? | For example too few baseline conversions to estimate EPC: the drop can be neither confirmed nor ruled out, so the agent abstains (`unknown`, needs review, no loss figure) |
 | Is it just the time of week? | When 3 or more earlier days of the same type exist (weekday or weekend), the same hours on those days are a second baseline. A drop against the last 21 hours that is normal against that baseline is `no_anomaly` |
 | Anything else in the numbers? | Flags for a traffic spike (clicks up 100% or more) and for conversions that stopped completely |
+
+**Which test, for which metric** (`stats.py`, no dependencies, deterministic)
+
+| Alert metric | Test | Why this one | Known limits |
+|---|---|---|---|
+| `conversion_rate` | Two-proportion z test when every expected count is at least 5, otherwise Fisher's exact test | A conversion rate is a binomial proportion. The z test's normal approximation breaks down on small counts, the exact test does not | Assumes clicks are independent. Real traffic is clustered (one source, one bad hour), so true variance is larger and the p-values are optimistic |
+| `epc` | Parametric bootstrap: resample the baseline hours, then simulate the current window's conversions (binomial) and their payouts (drawn from the resampled payouts), 2000 draws, fixed seed | EPC is conversion rate times payout per conversion, and payouts are skewed. A binomial test cannot see a payout cut at all | Only hourly aggregates exist, so a "payout" is an hour's average: within-hour skew is lost and the test is somewhat overconfident. The smallest possible p is 1/2001. Needs at least 20 baseline conversions, otherwise inconclusive |
+| `revenue`, `clicks` | None (`threshold_only`) | Volume moves with time of day and with the affiliate's buying; an hourly count is not a proportion | Judged on the business threshold and volume only. The result says "not tested", and the signal strength is never "strong" |
+
+Regression tests cover the cases a wrong test gets wrong: an unchanged conversion rate with a payout cut is a significant EPC drop; a halved conversion rate with doubled payouts is not; a -32% EPC dip inside the normal payout spread is not; a small sample is inconclusive; zero revenue and incomplete history are handled.
+
+**What each number means** (do not mix these up)
+
+| Field | Kind | How it is set |
+|---|---|---|
+| `kpi.significance.p_value`, `result` | Statistical evidence | The test above. A real probability statement, under the test's assumptions |
+| `drop_threshold_pct`, bot score, geo share, postback ratio, latency limits | Heuristic thresholds | Reasonable defaults in `config.py`. Not fitted to data |
+| `est_revenue_loss_per_hour_usd` | Business impact | Baseline revenue per hour minus current revenue per hour |
+| `severity` | Business priority | A rule on cause and loss: a broken page is critical, a capped or paused offer never pages anyone |
+| `confidence` | Heuristic diagnostic rank | Fixed values: 0.9 clean, 0.7 degraded or partial, 0.4 unknown, minus 0.2 when the model disagrees. **Not a calibrated probability** |
+| `findings[].evidence_strength` | Heuristic | "strong" fully explains a drop, "moderate" partly, "weak" is near a threshold |
 
 ### How findings are graded (`rules.py`)
 
@@ -138,10 +161,14 @@ Every finding carries its cause, status, severity, evidence strength, the suppor
 `http_probe.py` sends real HTTP requests with `httpx` and reduces the response to four facts (status, latency, title, pixel present). It is injected into `DataSource`, selected by `TRIAGE_PAGE_PROBE=http`, and the fixture probe stays the default so the demo and tests need no network.
 
 - Timeouts, a response size cap, and response validation.
-- A host allowlist, and refusal of any host that resolves to a private, loopback or link-local address.
-- Redirects are followed by hand, at most 3, and every hop is checked again.
-- HTTP 429 (and 503 with Retry-After) becomes a retryable error that carries the wait. The agent sleeps that long, capped at 30 s, for at most 3 attempts.
-- Tested with `httpx.MockTransport`. `python -m triage_agent probe <url>` runs it once against a real site.
+- A host allowlist, and refusal of any host that resolves to a private, loopback or link-local address (IPv4 and IPv6).
+- **DNS pinning against rebinding.** The host is resolved once per hop, all addresses must be public, and the connection goes to that vetted IP. The real name is sent in the Host header and as the TLS SNI name (`sni_hostname`), which httpcore also uses to verify the certificate. So a DNS server that answers "public" to the check and "169.254.169.254" to the connect cannot redirect the request, and certificate checking is unchanged: connecting to python.org's IP while claiming to be iana.org fails with "certificate is not valid for 'www.iana.org'".
+- Proxy settings from the environment are ignored, so the connection really goes to the pinned address.
+- Redirects are followed by hand, at most 3, and every hop is vetted and pinned again.
+- HTTP 429 (and 503 with Retry-After) becomes a retryable error that carries the wait. The agent sleeps that long, capped at 30 s, for at most 3 attempts. A TLS certificate failure is permanent and not retried.
+- Tested with `httpx.MockTransport`, including a rebinding resolver. `python -m triage_agent probe <url>` runs it once against a real site.
+
+Remaining risk: the first address of a multi-address answer is used, with no fallback to the others. A proxy that the operator configures on purpose is not supported. Production should still put the prober behind an egress proxy or firewall that blocks private ranges, as a second layer.
 
 The fixture campaigns use `.test` hosts that do not exist, so in `http` mode with those campaigns the page check fails as "not on the allowlist" and is reported as inconclusive. That is the honest outcome: the campaign data is mock data.
 
@@ -176,7 +203,7 @@ Nothing needs to be set for the offline demo. The app reads environment variable
 | `TRIAGE_PAGE_ALLOWED_HOSTS` | empty | Comma separated hosts the HTTP probe may request |
 | `TRIAGE_API_KEY` | unset | When set, the API requires the header `X-API-Key` |
 | `TRIAGE_DB`, `TRIAGE_RUNS_DIR` | `var/incidents.db`, `runs` | Incident store and trace files |
-| `TRIAGE_DROP_THRESHOLD_PCT`, `TRIAGE_MIN_CLICKS_FOR_SIGNAL`, `TRIAGE_Z_THRESHOLD`, `TRIAGE_BOT_SCORE_THRESHOLD`, ... | see `config.py` | Business thresholds |
+| `TRIAGE_DROP_THRESHOLD_PCT`, `TRIAGE_MIN_CLICKS_FOR_SIGNAL`, `TRIAGE_SIGNIFICANCE_ALPHA`, `TRIAGE_BOT_SCORE_THRESHOLD`, ... | see `config.py` | Business thresholds and the test level |
 
 ## 9. Offline execution
 
@@ -238,24 +265,86 @@ The body of `POST /triage` is always a `TriageResult`, whatever the status code,
 ## 12. Automated tests
 
 ```bash
-pytest          # 180 tests, a few seconds, no network and no API key
-ruff check .    # lint
+pytest                           # 213 tests, about 10 seconds, no network and no API key
+ruff check . && ruff format --check .
+mypy                             # src/, settings in pyproject.toml
+python -m triage_agent evaluate  # labelled evaluation, section 12a
 ```
+
+CI (`.github/workflows/ci.yml`) runs ruff lint, ruff format check and mypy on Python 3.10, then the tests and the evaluation on 3.10 and 3.12. Any of them failing fails the build.
+
+mypy settings: `disallow_untyped_defs`, `check_untyped_defs`, `no_implicit_optional`, `strict_equality`, `warn_return_any` and related flags on `src/`, with no `type: ignore` anywhere. The only exclusion is the optional `langchain` import. Tests are not type-checked: they rely on scripted fakes and dynamic fixtures.
 
 | File | What it proves |
 |---|---|
+| `tests/test_stats.py` | The significance tests: z test against a hand calculation, Fisher's exact test against the hypergeometric formula, exact test chosen for small counts, unbiased binomial sampler, deterministic bootstrap, and the EPC regressions (payout cut with unchanged conversion rate, falling conversion rate with stable EPC, dip inside payout noise, small sample, zero revenue, incomplete history) |
+| `tests/test_evaluation.py` | Metric definitions on hand-built outcomes (multi-label counts, undefined values stay `None`, abstention and false alarm rates, severity only where labelled), dataset hygiene, separation from the demo data, determinism, and that the offline results equal the committed report |
 | `tests/test_guardrails.py` | Validation errors per field, injection detection, sanitiser, refusal of mutating requests |
 | `tests/test_kpi.py` | KPI maths on hand-built history: missing buckets, insufficient data, zero baselines, zero clicks, a drop that is within chance, traffic spike, alert time inside an hour, untimestamped rows, weekday and weekend baselines, a real weekend drop that is not explained away |
 | `tests/test_rules.py` | Every root cause, priority order, low-volume noise, degraded checks, model disagreement, "never guess on incomplete evidence", a partly explained drop |
 | `tests/test_findings.py` | Graded findings: several confirmed causes at once without duplicates, suspected never becomes the root cause, failed checks are inconclusive, confirmed beats inconclusive, a 404 is a broken page and not a tracking problem |
 | `tests/test_tools.py` | Each tool on fixture data, flaky probe, URL allowlist, runbook ranking, injection in runbook text, incident CRUD and de-duplication, the database refusing a second open incident, two threads racing to open the same incident |
-| `tests/test_http_probe.py` | The real HTTP probe with `httpx.MockTransport`: error pages, timeouts, rate limits with Retry-After, refused URLs (not allowlisted, wrong scheme, private and link-local addresses), redirects checked hop by hop, size cap, and the probe wired into a full run |
+| `tests/test_http_probe.py` | The real HTTP probe with `httpx.MockTransport`: error pages, timeouts, rate limits with Retry-After, refused URLs (not allowlisted, wrong scheme, private and link-local addresses), redirects checked hop by hop, size cap, DNS pinning (connection to the vetted IP with the real name for Host and TLS, a rebinding resolver, rebinding between redirect hops, IPv6, environment proxies ignored), certificate failures not retried, and the probe wired into a full run |
 | `tests/test_llm_planner.py` | The real-model code path with scripted fake models: garbage output, valid JSON that fails the schema, provider exception, tool outside the allowlist, early stop, a model that argues for the wrong verdict, failed hypothesis and note calls, a LangChain chat model with content blocks, and an adversarial capture test with hostile text on all three outside channels |
 | `tests/test_observability.py` | Trace contents (ids, durations, retries, model, tokens, approval status), secret redaction, the planner circuit breaker, and the field allowlist: an unexpected free-text field from a tool never appears in any prompt |
 | `tests/test_api.py` | Status codes, one response schema for every outcome, health, incidents filter, the optional API key, and that an unauthorized request runs nothing |
 | `tests/test_e2e.py` | Every sample alert through the full graph compared with `samples/expected/`, retries with backoff, tool outage, refusals, both injection routes, rejected input runs zero tools, trace completeness |
 
 Expected outputs are regenerated with `python scripts/make_expected.py`, fixtures with `python scripts/make_fixtures.py`.
+
+## 12a. Evaluation on a labelled dataset
+
+`python -m triage_agent evaluate` runs the agent on `eval/dataset.json` and prints per-cause precision, recall and F1, macro and micro averages, primary accuracy, abstention, false alarm and missed incident rates, severity accuracy, a confusion matrix and every case it got wrong. `--json report.json` writes the full report; `--llm <provider:model>` runs the same cases with a live planner.
+
+**The dataset is synthetic.** 42 hand-built cases, not production data and not real incidents. `scripts/make_eval_dataset.py` builds it: each case has an alert, a campaign and offer, KPI history from a deterministic generator, page, tracking and traffic evidence, the expected causes, primary cause and (where policy makes it unambiguous) severity, and a written rationale. The labels follow an explicit analyst policy at the top of that script, written before running the agent. They include cases chosen because the rules are expected to get them wrong. The cases use their own campaigns and do not touch the demo data.
+
+| Category | Cases | | Category | Cases |
+|---|---:|---|---|---:|
+| normal variation (incl. partner volume drop) | 7 | | multiple simultaneous causes | 6 |
+| insufficient evidence | 5 | | traffic anomalies | 5 |
+| EPC deterioration | 4 | | conflicting evidence and misleading notes | 4 |
+| offer (cap, pause, near cap) | 3 | | landing page down / slow | 2 / 2 |
+| seasonal (weekend) | 2 | | tracking and postbacks | 2 |
+
+**How it is scored.** Multi-label: the predicted causes of a case are its *confirmed* findings. Suspected and inconclusive findings are not counted as predictions, but a missed cause that was flagged that way is reported. A metric whose denominator is zero is shown as `n/a`, never as 0 or 1.
+
+**Results** (offline policy, deterministic; pinned in `eval/report_offline.json`, and a test fails if they change):
+
+| Cause | Support | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|
+| landing_page_down | 8 | 1.00 | 1.00 | 1.00 |
+| offer_paused | 2 | 1.00 | 1.00 | 1.00 |
+| offer_cap_reached | 5 | 1.00 | 1.00 | 1.00 |
+| tracking_broken | 4 | 1.00 | 1.00 | 1.00 |
+| traffic_quality | 6 | 1.00 | 0.50 | 0.67 |
+| geo_mismatch | 3 | 1.00 | 1.00 | 1.00 |
+
+| Metric | Value |
+|---|---|
+| Macro F1 (causes with support) | 0.94 |
+| Micro precision / recall / F1 | 1.00 / 0.89 / 0.94 |
+| Primary root cause accuracy | 0.95 (40 of 42) |
+| Correct abstention rate (labelled `unknown`, said `unknown`) | 1.00 (11 of 11) |
+| Abstention precision (said `unknown`, labelled `unknown`) | 0.85 (11 of 13) |
+| False alarm rate (labelled normal, incident opened) | 0.00 (0 of 8) |
+| Missed incident rate (real incident, called normal) | 0.00 |
+| Severity accuracy | 1.00 (12 labelled) |
+| Secondary findings found | 4 of 5 |
+| Unsupported / missed findings | 0 / 3, 2 of the 3 missed were flagged as suspected |
+
+The three errors, all in traffic and all in cases written to be hard:
+- `Q03_spike_no_flagged_source`: a surge of mediocre traffic from six new sources, none over a limit. The rules look for one bad source, so the agent says `unknown` and reports traffic as *suspected*.
+- `Q04_borderline_bot_source`: bot score 0.65 against a 0.7 limit. Same outcome.
+- `M03_cap_and_bots`: the agent stops at the capped offer and never checks traffic, so the bot source is missed. This is the cost of the stopping rule.
+
+**What these numbers do and do not show.** They show that the logic does what its written policy says on 42 varied scenarios, including multi-cause, conflicting and insufficient-evidence cases, and they will catch regressions. They are **not** an estimate of real-world accuracy. The same person wrote the rules, the generator and the labels, most cases sit clearly on one side of a threshold, and there is no held-out set. Expect real-world numbers to be lower, especially traffic recall.
+
+**Thresholds: exploratory only.** `python scripts/threshold_sweep.py` moves one threshold at a time and re-scores. The defaults were not changed from it:
+- Lowering the bot score limit from 0.7 to 0.6 "improves" macro F1 (0.94 to 0.97), but only because it catches `Q04`, a case written at 0.65. Choosing that would fit the author's example, not traffic.
+- Tightening the postback ratio limit to 0.3 or loosening the page latency limit to 15 s costs two cases each. Moving the drop threshold to -50% starts missing incidents.
+- `min_clicks_for_signal` and `significance_alpha` barely move anything: the set has almost no cases near those boundaries. That is a gap in the dataset, not evidence the values are right.
+
+**What genuine calibration would need.** A few hundred real alerts with the cause a manager confirmed afterwards (from incident tickets), including the "nothing was wrong" ones, split by time into a tuning set and a later test set. With that: thresholds chosen on the tuning set, precision and recall per cause measured on the test set, and `confidence` replaced by a calibrated score (for example the observed share of verdicts that were right per confidence band, checked with a reliability curve). Until then, every threshold and the confidence values are documented defaults.
 
 ## 13. Manual testing scenarios
 
@@ -285,7 +374,8 @@ Human-readable summary:
 Triage ALT-1012 | CMP-109 Solar panel quote ES
 Root cause: landing_page_down | severity: critical | confidence: 0.90
 KPI: revenue -88.9% vs baseline (conversion rate 5.00% -> 0.56%, 895 clicks in the last 3h). Estimated loss: $267/hour.
-     Same hours on the previous 5 weekdays: -88.9%. Signal strength: strong.
+     Test: not tested (no statistical test for this metric; judged on the business threshold and volume).
+     Same hours on the previous 5 weekdays: -88.9%. Signal strength: moderate.
 Why:
   - Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before it loads.
 Also found (lower priority, check after the main cause):
@@ -324,7 +414,8 @@ Structured result (shortened, full version in `samples/expected/`):
      "supporting_metrics": {"offer_id": "OFF-19", "status": "active", "daily_cap": 200, "conversions_today": 200},
      "recommended_actions": ["Tell the affiliate the daily cap is reached so they can shift traffic.", "..."]}
   ],
-  "kpi": {"metric": "revenue", "metric_change_pct": -88.9, "conversion_z": -6.03, "signal_strength": "strong",
+  "kpi": {"metric": "revenue", "metric_change_pct": -88.9, "signal_strength": "moderate",
+          "significance": {"method": "threshold_only", "result": "not_tested", "p_value": null, "...": "..."},
           "significant": true, "data_sufficient": true,
           "data_quality": {"timestamped": true, "history_hours": 192, "missing_current_hours": 0, "missing_baseline_hours": 0},
           "seasonal": {"available": true, "day_type": "weekdays", "days_used": 5, "metric_change_pct": -88.9, "...": "..."},
@@ -388,24 +479,25 @@ Tested adversarially: hostile text on all three channels at once never appears i
 ## 17. Trade-offs and limitations
 
 - **Mostly mocked data.** Tracker, offer and traffic data come from `data/world.json`. Only the landing page probe has a real implementation, and it has been run against public sites, not against real campaign pages.
-- **Thresholds are not tuned.** The values in `config.py` are reasonable defaults. The 20% "suspected" band and the 2.58 z threshold are choices, not measurements. Real tuning needs labelled historical incidents.
-- **Simple statistics.** The z test covers rate metrics. Revenue and clicks alerts are judged on threshold and volume only. The seasonal baseline is the average of the same hours on earlier days of the same type: it knows weekdays from weekends, but not holidays, promotions or trends.
+- **Thresholds and confidence are not calibrated.** The values in `config.py`, the 20% "suspected" band, alpha 0.01 and the confidence ranks are choices, not measurements. The evaluation set is synthetic and was written by the same person as the rules (section 12a), so it cannot calibrate them.
+- **Simple statistics.** The conversion-rate tests assume independent clicks, which real, clustered traffic is not, so their p-values are optimistic. The EPC bootstrap only has hourly aggregates. Revenue and clicks alerts have no test, only a threshold. Each alert is tested on its own, with no correction for the many campaigns watched at once. The seasonal baseline knows weekdays from weekends, but not holidays, promotions or trends.
 - **One root cause, by priority.** Several findings are reported, but the root cause is the first confirmed one in a fixed order. After a full explanation the investigation stops, so a second problem in a check that never ran is not found. That is the cost of not spending tool calls on every alert.
 - **Fixed rule set.** Six named root causes plus `no_anomaly`. Anything else lands in `unknown` and goes to a human. The agent does not discover new failure types.
-- **Probe limits.** The pixel check looks for a marker string in the HTML and does not run JavaScript. The address check happens before the request, so a DNS answer that changes between the check and the connection is not covered (production should pin the resolved address or use an egress proxy).
+- **Traffic recall is the weak spot.** The rules look for one bad source or one share of wrong countries. A broad surge of mediocre traffic, or a source just under a limit, is reported as suspected, not confirmed (two of the three evaluation errors).
+- **Probe limits.** The pixel check looks for a marker string in the HTML and does not run JavaScript. DNS is pinned per hop (section 5), but only the first resolved address is tried, and an egress firewall is still advised as a second layer.
 - **API key is one shared secret.** No users, roles or rate limiting. The demo page does not send a key.
 - **SQLite and local files.** Fine for one instance. Several instances need a shared database and log shipping.
 - **Keyword runbook search.** Good enough for five documents.
 - **The model has a small job.** By design. With a real model the benefit is adaptive ordering, the cross-check and the note, not the verdict. On these samples the live planner and the offline policy reach the same verdicts.
 - **One live provider tested**, on one day, on 15 samples. Other providers go through the same `init_chat_model` call but were not run live.
-- **CI runs the tests on Python 3.10 and 3.12.** Lint (`ruff`) is configured but not yet part of the CI workflow.
+- **Tests are not type-checked.** mypy covers `src/` only.
 
 ## 18. Future improvements
 
 1. Implement `DataSource` against the real tracker and offer API, the way the page probe was done.
 2. Human-in-the-loop approval of the alert draft with a LangGraph interrupt, then send through Slack or email.
 3. Subscribe to the KPI monitor's webhook so triage starts with no human in front.
-4. A labelled set of past incidents, to tune thresholds and to measure precision and recall per cause.
+4. A labelled set of real past incidents, to tune thresholds and calibrate confidence (section 12a says what it needs).
 5. Feedback loop: managers mark verdicts right or wrong.
 6. Embedding search over runbooks and past incidents ("last time this affiliate dropped, the cause was X").
 7. Limited, approved actions (for example pause a sub source after a manager clicks approve).
@@ -428,17 +520,18 @@ What it would take to productionize:
 - **Human in the loop.** An approval step before any alert leaves the system. A weekly review of flagged and `unknown` runs. No automated campaign changes without explicit approval.
 - **Compliance.** Traffic data can contain IP addresses and device ids, which are personal data under GDPR. Aggregate before the agent sees it, as the fixtures do. Define retention for traces and incidents. Keep an audit log of who approved what.
 - **Evaluation.** A labelled set of historical incidents to measure verdict accuracy before rollout, then shadow mode next to the human process for a few weeks.
-- **Operations.** A shared database instead of SQLite, a container image, and lint and type checks in CI.
+- **Operations.** A shared database instead of SQLite and a container image.
 
 ## Repository layout
 
 ```
-src/triage_agent/     agent, rules, guardrails, tools, llm, http_probe, tracing, cli, api
-data/world.json       mock campaigns (12), timestamped hourly KPI history, pages, tracking, traffic
+src/triage_agent/     agent, rules, stats, guardrails, tools, llm, http_probe, evaluation, synthetic, tracing, cli, api
+data/world.json       mock campaigns (12) for the demo, timestamped hourly KPI history, pages, tracking, traffic
+eval/                 labelled SYNTHETIC evaluation set (42 cases) and the pinned offline report
 runbooks/             local docs searched by the agent
-samples/alerts/       15 sample inputs
+samples/alerts/       15 demo inputs
 samples/expected/     expected structured outputs
-scripts/              fixture and expected-output generators, offline vs live planner eval
+scripts/              fixture, expected-output and eval-dataset generators, planner comparison, threshold sweep
 docs/                 dated record of a live model run
-tests/                180 unit, integration and end-to-end tests
+tests/                213 unit, integration and end-to-end tests
 ```

@@ -1,4 +1,5 @@
 """Typed contracts: the alert that comes in and the triage result that goes out."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -57,8 +58,8 @@ class PlanStep(BaseModel):
 
 
 class FindingStatus(str, Enum):
-    confirmed = "confirmed"        # a rule threshold is clearly met on healthy evidence
-    suspected = "suspected"        # close to a threshold: worth a look, never the root cause by itself
+    confirmed = "confirmed"  # a rule threshold is clearly met on healthy evidence
+    suspected = "suspected"  # close to a threshold: worth a look, never the root cause by itself
     inconclusive = "inconclusive"  # the check could not run or the data is incomplete: cannot be ruled out
 
 
@@ -78,13 +79,15 @@ class Finding(BaseModel):
 class Verdict(BaseModel):
     root_cause: RootCause
     severity: Severity
-    confidence: float = Field(ge=0, le=1)
+    # A fixed heuristic rank (0.9 clean, 0.7 degraded, 0.4 unknown, minus 0.2 on model disagreement).
+    # NOT a calibrated probability: it has never been fitted to how often verdicts are right.
+    confidence: float = Field(ge=0, le=1, description="Heuristic diagnostic confidence rank. Not a calibrated probability.")
     needs_human_review: bool
     reasons: list[str]
     recommended_actions: list[str]
-    findings: list[Finding] = Field(default_factory=list)    # every finding, the primary one first
+    findings: list[Finding] = Field(default_factory=list)  # every finding, the primary one first
     other_findings: list[str] = Field(default_factory=list)  # the non-primary findings as short text
-    stop_reason: str = ""                                     # why the investigation ended where it did
+    stop_reason: str = ""  # why the investigation ended where it did
     owner_role: str | None = None
     est_revenue_loss_per_hour_usd: float = 0.0
     unavailable_checks: list[str] = Field(default_factory=list)

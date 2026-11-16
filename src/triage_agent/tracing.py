@@ -7,6 +7,7 @@ Every event carries the run id and, once known, the campaign id. Values are reda
 before they are written: anything under a secret-looking key, and anything that looks
 like an API key or bearer token inside a string.
 """
+
 from __future__ import annotations
 
 import json
@@ -62,8 +63,7 @@ class Tracer:
         self._context.update(fields)
 
     def event(self, kind: str, **fields: Any) -> None:
-        record = {"ts": round(time.time(), 3), "run_id": self.run_id, "event": kind,
-                  **self._context, **redact(fields)}
+        record = {"ts": round(time.time(), 3), "run_id": self.run_id, "event": kind, **self._context, **redact(fields)}
         self.events.append(record)
         line = json.dumps(record, default=str)
         logger.info(line)

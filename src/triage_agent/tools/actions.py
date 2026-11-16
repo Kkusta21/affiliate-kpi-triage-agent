@@ -3,6 +3,7 @@
 Neither touches a campaign. Incidents are internal records. Alerts are drafts that a
 human approves and sends.
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -95,8 +96,10 @@ class IncidentStore:
         return self.get(incident_id)  # type: ignore[return-value]
 
     def close(self, incident_id: str) -> dict[str, Any] | None:
-        self._conn.execute("UPDATE incidents SET status = 'closed', updated_at = ? WHERE seq = ?",
-                           (self._clock(), int(incident_id.split("-")[1])))
+        self._conn.execute(
+            "UPDATE incidents SET status = 'closed', updated_at = ? WHERE seq = ?",
+            (self._clock(), int(incident_id.split("-")[1])),
+        )
         self._conn.commit()
         return self.get(incident_id)
 
@@ -133,8 +136,9 @@ def upsert_incident(store: IncidentStore, campaign_id: str, alert_id: str, verdi
     return IncidentRef(action="created", incident_id=created["incident_id"], occurrences=1)
 
 
-def draft_alert(campaign: dict[str, Any], kpi: dict[str, Any], verdict: Verdict, incident: IncidentRef,
-                analyst_note: str | None = None) -> AlertDraft:
+def draft_alert(
+    campaign: dict[str, Any], kpi: dict[str, Any], verdict: Verdict, incident: IncidentRef, analyst_note: str | None = None
+) -> AlertDraft:
     """Template-based so the facts in the message always match the verdict."""
     role = verdict.owner_role or "affiliate_manager"
     title = verdict.root_cause.value.replace("_", " ")
@@ -144,9 +148,12 @@ def draft_alert(campaign: dict[str, Any], kpi: dict[str, Any], verdict: Verdict,
         f"manager {campaign['manager']})",
         f"Incident: {incident.incident_id} ({incident.action}, seen {incident.occurrences}x)",
         f"What happened: {kpi.get('metric', 'KPI')} changed {kpi.get('metric_change_pct', 'n/a')}% "
-        f"vs baseline. " + (f"Estimated loss ${verdict.est_revenue_loss_per_hour_usd:.0f}/hour."
-                            if verdict.est_revenue_loss_per_hour_usd > 0
-                            else "No direct revenue loss measured in this window."),
+        f"vs baseline. "
+        + (
+            f"Estimated loss ${verdict.est_revenue_loss_per_hour_usd:.0f}/hour."
+            if verdict.est_revenue_loss_per_hour_usd > 0
+            else "No direct revenue loss measured in this window."
+        ),
         "Why: " + " ".join(verdict.reasons),
         *[f"Also found: {finding}" for finding in verdict.other_findings],
         "Suggested next steps:",
@@ -156,5 +163,4 @@ def draft_alert(campaign: dict[str, Any], kpi: dict[str, Any], verdict: Verdict,
         lines.append("Note: automated triage is not conclusive here, please review the evidence.")
     if analyst_note:
         lines.append(f"Analyst note (AI written): {analyst_note}")
-    return AlertDraft(to_role=role, channel=CHANNEL.get(role, "direct message"), subject=subject,
-                      body="\n".join(lines))
+    return AlertDraft(to_role=role, channel=CHANNEL.get(role, "direct message"), subject=subject, body="\n".join(lines))

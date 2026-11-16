@@ -7,6 +7,7 @@ Three ideas keep the agent safe:
    routed to a human owner.
 3. The model never supplies tool arguments such as URLs or campaign ids. Code does.
 """
+
 from __future__ import annotations
 
 import re
@@ -41,7 +42,7 @@ REMOVED = "[removed: suspected prompt injection]"
 
 
 def looks_like_injection(text: str | None) -> bool:
-    return bool(text) and bool(_INJECTION_RE.search(text))
+    return bool(text) and bool(_INJECTION_RE.search(text or ""))
 
 
 def sanitize_untrusted(text: str | None, max_len: int = 200) -> tuple[str, bool]:
@@ -61,11 +62,13 @@ def find_refused_requests(note: str | None) -> list[dict[str, str]]:
         return []
     refused = []
     for match in _MUTATION_RE.finditer(note):
-        refused.append({
-            "request": match.group(0)[:120],
-            "reason": "This agent is read-only. Changes to campaigns, offers, payouts or traffic "
-                      "sources need a human with the right permissions.",
-        })
+        refused.append(
+            {
+                "request": match.group(0)[:120],
+                "reason": "This agent is read-only. Changes to campaigns, offers, payouts or traffic "
+                "sources need a human with the right permissions.",
+            }
+        )
     return refused
 
 
@@ -76,6 +79,5 @@ def validate_alert(raw: Any) -> tuple[Alert | None, dict[str, Any] | None]:
     try:
         return Alert.model_validate(raw), None
     except ValidationError as exc:
-        errors = [{"field": ".".join(str(p) for p in e["loc"]) or "(root)", "problem": e["msg"]}
-                  for e in exc.errors()]
+        errors = [{"field": ".".join(str(p) for p in e["loc"]) or "(root)", "problem": e["msg"]} for e in exc.errors()]
         return None, {"code": "invalid_input", "message": "Alert failed validation.", "errors": errors}

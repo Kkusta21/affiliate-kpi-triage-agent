@@ -1,4 +1,5 @@
 """Graded findings: confirmed, suspected and inconclusive, several at once, never duplicated."""
+
 from __future__ import annotations
 
 from triage_agent import rules
@@ -31,7 +32,9 @@ def test_two_causes_in_one_check_are_both_reported_once():
     verdict = rules.evaluate(full(traffic_quality=traffic), SETTINGS)
     assert verdict.root_cause is RootCause.traffic_quality
     assert [(f.cause.value, f.status.value, f.primary) for f in verdict.findings] == [
-        ("traffic_quality", "confirmed", True), ("geo_mismatch", "confirmed", False)]
+        ("traffic_quality", "confirmed", True),
+        ("geo_mismatch", "confirmed", False),
+    ]
     assert verdict.other_findings[0].startswith("geo_mismatch: 55% of traffic")
 
 
@@ -42,17 +45,21 @@ def test_every_rule_that_matches_gathered_evidence_is_reported_without_duplicate
         offer_status={**OFFER, "status": "paused", "cap_reached": True},
         landing_page_check={**PAGE, "has_tracking_pixel": False},
         tracking_check={**TRACKING, "pixel_events": 0, "postback_ratio": None},
-        traffic_quality={**BOTS, "disallowed_geo_share": 0.55, "disallowed_geos": ["RO"]})
+        traffic_quality={**BOTS, "disallowed_geo_share": 0.55, "disallowed_geos": ["RO"]},
+    )
     verdict = rules.evaluate(evidence, SETTINGS)
     causes = [f.cause.value for f in verdict.findings]
-    assert verdict.root_cause is RootCause.offer_paused                # first in priority order
+    assert verdict.root_cause is RootCause.offer_paused  # first in priority order
     assert causes == ["offer_paused", "offer_cap_reached", "tracking_broken", "traffic_quality", "geo_mismatch"]
     assert len(causes) == len(set(causes)) and sum(f.primary for f in verdict.findings) == 1
 
 
 def test_no_tool_is_requested_once_the_drop_is_fully_explained():
-    evidence = {"kpi_snapshot": full()["kpi_snapshot"], "landing_page_check": PAGE,
-                "offer_status": {**OFFER, "cap_reached": True}}
+    evidence = {
+        "kpi_snapshot": full()["kpi_snapshot"],
+        "landing_page_check": PAGE,
+        "offer_status": {**OFFER, "cap_reached": True},
+    }
     assert rules.next_needed(evidence, SETTINGS) is None
     assert [f.cause.value for f in rules.evaluate(evidence, SETTINGS).findings] == ["offer_cap_reached"]
 
@@ -67,16 +74,26 @@ def test_weak_postback_ratio_explains_only_part_of_the_drop_so_traffic_is_still_
 
 
 def test_near_threshold_values_are_suspected_and_never_the_root_cause():
-    near = full(traffic_quality={**TRAFFIC, "worst_source": {"sub_id": "s9", "share": 0.5, "bot_score": 0.6},
-                                 "disallowed_geo_share": 0.26, "disallowed_geos": ["RO"]},
-                landing_page_check={**PAGE, "latency_ms": 9000},
-                tracking_check={**TRACKING, "postbacks_received": 11, "postback_ratio": 0.55},
-                offer_status={**OFFER, "cap_used_share": 0.9})
+    near = full(
+        traffic_quality={
+            **TRAFFIC,
+            "worst_source": {"sub_id": "s9", "share": 0.5, "bot_score": 0.6},
+            "disallowed_geo_share": 0.26,
+            "disallowed_geos": ["RO"],
+        },
+        landing_page_check={**PAGE, "latency_ms": 9000},
+        tracking_check={**TRACKING, "postbacks_received": 11, "postback_ratio": 0.55},
+        offer_status={**OFFER, "cap_used_share": 0.9},
+    )
     verdict = rules.evaluate(near, SETTINGS)
     assert verdict.root_cause is RootCause.unknown and verdict.needs_human_review
     assert {f.cause.value: f.status.value for f in verdict.findings} == {
-        "landing_page_down": "suspected", "offer_cap_reached": "suspected", "tracking_broken": "suspected",
-        "traffic_quality": "suspected", "geo_mismatch": "suspected"}
+        "landing_page_down": "suspected",
+        "offer_cap_reached": "suspected",
+        "tracking_broken": "suspected",
+        "traffic_quality": "suspected",
+        "geo_mismatch": "suspected",
+    }
     assert not any(f.primary or f.recommended_actions for f in verdict.findings)
     assert any(r.startswith("Suspected but unconfirmed: ") for r in verdict.reasons)
     assert "traffic_quality (suspected): " in " | ".join(verdict.other_findings)
@@ -94,8 +111,7 @@ def test_failed_check_is_inconclusive_for_the_causes_it_would_have_tested():
     assert verdict.root_cause is RootCause.unknown and verdict.unavailable_checks == ["tracking_check"]
     failed_offer = rules.evaluate(full(offer_status={"error": "timeout"}, traffic_quality=BOTS), SETTINGS)
     statuses = {f.cause.value: f.status.value for f in failed_offer.findings}
-    assert statuses == {"offer_paused": "inconclusive", "offer_cap_reached": "inconclusive",
-                        "traffic_quality": "confirmed"}
+    assert statuses == {"offer_paused": "inconclusive", "offer_cap_reached": "inconclusive", "traffic_quality": "confirmed"}
     assert failed_offer.root_cause is RootCause.traffic_quality and failed_offer.confidence == 0.7
 
 
@@ -111,7 +127,7 @@ def test_http_404_is_a_broken_page_not_a_tracking_problem():
     page = {**PAGE, "status_code": 404, "outcome": "client_error", "reachable": False, "has_tracking_pixel": False}
     verdict = rules.evaluate({"kpi_snapshot": full()["kpi_snapshot"], "landing_page_check": page}, SETTINGS)
     assert verdict.root_cause is RootCause.landing_page_down and "HTTP 404 (client error)" in verdict.reasons[0]
-    assert [f.cause.value for f in verdict.findings] == ["landing_page_down"]   # the missing pixel is not blamed
+    assert [f.cause.value for f in verdict.findings] == ["landing_page_down"]  # the missing pixel is not blamed
 
 
 def test_no_anomaly_and_insufficient_data_carry_no_findings():
@@ -130,7 +146,9 @@ def test_weak_kpi_signal_lowers_confidence_and_asks_for_review():
 def test_end_to_end_results_expose_findings_and_stop_reason(triage):
     both = triage(load_alert("12_slow_page_and_offer_cap.json"))
     assert [(f.cause.value, f.status.value, f.primary) for f in both.findings] == [
-        ("landing_page_down", "confirmed", True), ("offer_cap_reached", "confirmed", False)]
+        ("landing_page_down", "confirmed", True),
+        ("offer_cap_reached", "confirmed", False),
+    ]
     assert both.findings[0].evidence_strength == "moderate" and both.stop_reason == "confirmed by landing_page_check"
     outage = triage(load_alert("08_tracker_api_down.json"))
     assert [(f.cause.value, f.status.value) for f in outage.findings] == [("tracking_broken", "inconclusive")]

@@ -76,6 +76,7 @@
       "hours_expected": 21,
       "clicks_total": 6301,
       "conversions_total": 315,
+      "revenue_total_usd": 6300.0,
       "clicks_per_hour": 300.0,
       "conversions_per_hour": 15.0,
       "conversion_rate": 0.05,
@@ -87,6 +88,7 @@
       "hours_expected": 3,
       "clicks_total": 895,
       "conversions_total": 5,
+      "revenue_total_usd": 100.0,
       "clicks_per_hour": 298.3,
       "conversions_per_hour": 1.67,
       "conversion_rate": 0.0056,
@@ -109,9 +111,22 @@
       "missing_baseline_hours": 0
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "revenue",
+      "method": "threshold_only",
+      "result": "not_tested",
+      "p_value": null,
+      "alpha": null,
+      "statistic": null,
+      "observed": 33.33,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": "no statistical test for this metric; judged on the business threshold and volume"
+    },
     "statistically_significant": null,
-    "signal_strength": "strong",
+    "signal_strength": "moderate",
     "significant": true,
+    "test_inconclusive": false,
     "traffic_spike": false,
     "conversions_stopped": false,
     "seasonal": {
@@ -223,5 +238,5 @@
       "reason": "Evidence points to landing_page_down; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1012 | CMP-109 Solar panel quote ES\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: revenue -88.9% vs baseline (conversion rate 5.00% -> 0.56%, 895 clicks in the last 3h). Estimated loss: $267/hour.\n     Same hours on the previous 5 weekdays: -88.9%. Signal strength: strong.\nWhy:\n  - Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before it loads.\nAlso found (lower priority, check after the main cause):\n  - offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> runbook_search"
+  "summary": "Triage ALT-1012 | CMP-109 Solar panel quote ES\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: revenue -88.9% vs baseline (conversion rate 5.00% -> 0.56%, 895 clicks in the last 3h). Estimated loss: $267/hour.\n     Test: not tested (no statistical test for this metric; judged on the business threshold and volume).\n     Same hours on the previous 5 weekdays: -88.9%. Signal strength: moderate.\nWhy:\n  - Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before it loads.\nAlso found (lower priority, check after the main cause):\n  - offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> runbook_search"
 }

@@ -36,6 +36,7 @@
       "hours_expected": 21,
       "clicks_total": 8401,
       "conversions_total": 336,
+      "revenue_total_usd": 4032.0,
       "clicks_per_hour": 400.0,
       "conversions_per_hour": 16.0,
       "conversion_rate": 0.04,
@@ -47,6 +48,7 @@
       "hours_expected": 3,
       "clicks_total": 1205,
       "conversions_total": 26,
+      "revenue_total_usd": 312.0,
       "clicks_per_hour": 401.7,
       "conversions_per_hour": 8.67,
       "conversion_rate": 0.0216,
@@ -69,9 +71,22 @@
       "missing_baseline_hours": 0
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "conversion_rate",
+      "method": "two_proportion_z",
+      "result": "significant",
+      "p_value": 0.000845,
+      "alpha": 0.01,
+      "statistic": -3.14,
+      "observed": 0.0216,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": ""
+    },
     "statistically_significant": true,
-    "signal_strength": "moderate",
+    "signal_strength": "strong",
     "significant": true,
+    "test_inconclusive": false,
     "traffic_spike": false,
     "conversions_stopped": false,
     "seasonal": {
@@ -247,5 +262,5 @@
       "reason": "Evidence points to unknown; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1007 | CMP-107 Credit score app PL\nRoot cause: unknown | severity: high | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -46.0% vs baseline (conversion rate 4.00% -> 2.16%, 1205 clicks in the last 3h). Estimated loss: $88/hour.\n     Same hours on the previous 5 weekdays: -46.1%. Signal strength: moderate.\nWhy:\n  - The drop is real but landing page, offer, tracking and traffic checks found no confirmed cause.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check x3 -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+  "summary": "Triage ALT-1007 | CMP-107 Credit score app PL\nRoot cause: unknown | severity: high | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -46.0% vs baseline (conversion rate 4.00% -> 2.16%, 1205 clicks in the last 3h). Estimated loss: $88/hour.\n     Test: two_proportion_z, one-sided p = 0.0008 (alpha 0.01): significant.\n     Same hours on the previous 5 weekdays: -46.1%. Signal strength: strong.\nWhy:\n  - The drop is real but landing page, offer, tracking and traffic checks found no confirmed cause.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check x3 -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
 }

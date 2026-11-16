@@ -13,6 +13,7 @@ Prompt hygiene rules applied here:
   agent falls back to the deterministic policy, so a bad model day cannot break triage.
   Failed hypothesis and note calls raise, and the agent records them as flags.
 """
+
 from __future__ import annotations
 
 import json
@@ -82,8 +83,11 @@ class OfflineLLM:
             return PlanStep(action=missing, reason=f"'{missing}' is the next check needed for a verdict.")
         cause = rules.provisional_cause(ctx.evidence, self._settings)
         if cause and cause is not RootCause.no_anomaly and "runbook_search" in ctx.remaining_tools:
-            return PlanStep(action="runbook_search", reason=f"Evidence points to {cause.value}; fetch the procedure.",
-                            runbook_query=RUNBOOK_QUERY[cause])
+            return PlanStep(
+                action="runbook_search",
+                reason=f"Evidence points to {cause.value}; fetch the procedure.",
+                runbook_query=RUNBOOK_QUERY[cause],
+            )
         return PlanStep(action=FINISH, reason="Enough evidence for a verdict.")
 
     def hypothesize(self, evidence: dict[str, Any]) -> str | None:
@@ -103,37 +107,94 @@ class OfflineLLM:
 #   CODES   a list of code strings, or a dict that maps code strings to numbers
 #   a set   a nested object (or a list of them) limited to these SCALAR keys
 SCALAR, CODES = "scalar", "codes"
-_WINDOW = {"hours_found", "hours_expected", "clicks_total", "conversions_total", "clicks_per_hour",
-           "conversions_per_hour", "conversion_rate", "revenue_per_hour_usd", "epc_usd"}
+_WINDOW = {
+    "hours_found",
+    "hours_expected",
+    "clicks_total",
+    "conversions_total",
+    "revenue_total_usd",
+    "clicks_per_hour",
+    "conversions_per_hour",
+    "conversion_rate",
+    "revenue_per_hour_usd",
+    "epc_usd",
+}
 _CHANGE = {"clicks", "conversion_rate", "revenue", "epc"}
 _SOURCE = {"sub_id", "clicks", "share", "bot_score", "top_geo"}
 
 MODEL_VISIBLE_FIELDS: dict[str, dict[str, Any]] = {
     "kpi_snapshot": {
-        "metric": SCALAR, "baseline": _WINDOW, "current": _WINDOW, "change_pct": _CHANGE,
-        "metric_change_pct": SCALAR, "conversion_z": SCALAR, "data_sufficient": SCALAR,
+        "metric": SCALAR,
+        "baseline": _WINDOW,
+        "current": _WINDOW,
+        "change_pct": _CHANGE,
+        "metric_change_pct": SCALAR,
+        "conversion_z": SCALAR,
+        "data_sufficient": SCALAR,
         "data_quality": {"timestamped", "history_hours", "missing_current_hours", "missing_baseline_hours"},
-        "enough_volume": SCALAR, "statistically_significant": SCALAR, "signal_strength": SCALAR,
-        "significant": SCALAR, "traffic_spike": SCALAR, "conversions_stopped": SCALAR,
-        "seasonal": {"available", "day_type", "days_used", "clicks_per_hour", "conversion_rate",
-                     "revenue_per_hour_usd", "epc_usd", "metric_change_pct"},
-        "seasonal_explained": SCALAR, "est_revenue_loss_per_hour_usd": SCALAR,
+        "enough_volume": SCALAR,
+        "statistically_significant": SCALAR,
+        "signal_strength": SCALAR,
+        "significance": {
+            "metric",
+            "method",
+            "result",
+            "p_value",
+            "alpha",
+            "statistic",
+            "observed",
+            "expected_low",
+            "expected_high",
+        },  # "detail" is prose, so it stays out
+        "significant": SCALAR,
+        "test_inconclusive": SCALAR,
+        "traffic_spike": SCALAR,
+        "conversions_stopped": SCALAR,
+        "seasonal": {
+            "available",
+            "day_type",
+            "days_used",
+            "clicks_per_hour",
+            "conversion_rate",
+            "revenue_per_hour_usd",
+            "epc_usd",
+            "metric_change_pct",
+        },
+        "seasonal_explained": SCALAR,
+        "est_revenue_loss_per_hour_usd": SCALAR,
     },
     "landing_page_check": {
-        "status_code": SCALAR, "outcome": SCALAR, "reachable": SCALAR, "latency_ms": SCALAR, "slow": SCALAR,
-        "has_tracking_pixel": SCALAR, "untrusted_text_flagged": SCALAR,
+        "status_code": SCALAR,
+        "outcome": SCALAR,
+        "reachable": SCALAR,
+        "latency_ms": SCALAR,
+        "slow": SCALAR,
+        "has_tracking_pixel": SCALAR,
+        "untrusted_text_flagged": SCALAR,
     },
     "offer_status": {
-        "offer_id": SCALAR, "status": SCALAR, "daily_cap": SCALAR, "conversions_today": SCALAR,
-        "cap_used_share": SCALAR, "cap_reached": SCALAR, "allowed_geos": CODES,
+        "offer_id": SCALAR,
+        "status": SCALAR,
+        "daily_cap": SCALAR,
+        "conversions_today": SCALAR,
+        "cap_used_share": SCALAR,
+        "cap_reached": SCALAR,
+        "allowed_geos": CODES,
     },
     "tracking_check": {
-        "clicks_recorded": SCALAR, "pixel_events": SCALAR, "postbacks_received": SCALAR,
-        "postback_ratio": SCALAR, "postback_errors": SCALAR, "minutes_since_last_postback": SCALAR,
+        "clicks_recorded": SCALAR,
+        "pixel_events": SCALAR,
+        "postbacks_received": SCALAR,
+        "postback_ratio": SCALAR,
+        "postback_errors": SCALAR,
+        "minutes_since_last_postback": SCALAR,
     },
     "traffic_quality": {
-        "sources": _SOURCE, "worst_source": _SOURCE, "geo_share": CODES,
-        "disallowed_geos": CODES, "disallowed_geo_share": SCALAR,
+        "sources": _SOURCE,
+        "worst_source": _SOURCE,
+        "geo_share": CODES,
+        "disallowed_geos": CODES,
+        "disallowed_geo_share": SCALAR,
     },
     # runbook_search is handled separately: file names and a hit count only.
 }
@@ -198,12 +259,14 @@ def note_payload(verdict: dict[str, Any], evidence: dict[str, Any]) -> dict[str,
     build them from data values (ids, status texts)."""
     return {
         "verdict": {
-            "root_cause": verdict.get("root_cause"), "severity": verdict.get("severity"),
-            "confidence": verdict.get("confidence"), "needs_human_review": verdict.get("needs_human_review"),
+            "root_cause": verdict.get("root_cause"),
+            "severity": verdict.get("severity"),
+            "confidence": verdict.get("confidence"),
+            "needs_human_review": verdict.get("needs_human_review"),
             "owner_role": verdict.get("owner_role"),
             "est_revenue_loss_per_hour_usd": verdict.get("est_revenue_loss_per_hour_usd"),
-            "recommended_actions": verdict.get("recommended_actions", []),   # fixed texts from rules.ACTIONS
-            "unavailable_checks": verdict.get("unavailable_checks", []),     # tool names
+            "recommended_actions": verdict.get("recommended_actions", []),  # fixed texts from rules.ACTIONS
+            "unavailable_checks": verdict.get("unavailable_checks", []),  # tool names
             "other_causes_found": [_safe_scalar(f.split(":", 1)[0]) for f in verdict.get("other_findings", [])],
         },
         "evidence": compact_evidence(evidence),
@@ -286,14 +349,17 @@ class ChatLLM:
 
     def _ask(self, system: str, user: str, call: str = "llm") -> str:
         started = time.perf_counter()
-        record: dict[str, Any] = {"call": call, "ok": False, "model": None, "input_tokens": None,
-                                  "output_tokens": None}
+        record: dict[str, Any] = {"call": call, "ok": False, "model": None, "input_tokens": None, "output_tokens": None}
         try:
             reply = self._model.invoke([("system", system), ("user", user)])
             usage = getattr(reply, "usage_metadata", None) or {}
             meta = getattr(reply, "response_metadata", None) or {}
-            record.update(ok=True, model=meta.get("model_name") or meta.get("model"),
-                          input_tokens=usage.get("input_tokens"), output_tokens=usage.get("output_tokens"))
+            record.update(
+                ok=True,
+                model=meta.get("model_name") or meta.get("model"),
+                input_tokens=usage.get("input_tokens"),
+                output_tokens=usage.get("output_tokens"),
+            )
         except Exception as exc:
             record["error_type"] = type(exc).__name__
             raise
@@ -319,10 +385,16 @@ class ChatLLM:
 
     def plan(self, ctx: PlanContext) -> PlanStep:
         tools = "\n".join(f"- {name}: {INVESTIGATION_TOOLS[name].description}" for name in ctx.remaining_tools)
-        payload = {"alert_metric": ctx.metric, "campaign": ctx.campaign_id,
-                   "evidence_so_far": compact_evidence(ctx.evidence),
-                   "requester_note": {"present": ctx.note_present, "flagged_injection": ctx.note_flagged_injection,
-                                      "refused_request_count": ctx.refused_request_count}}
+        payload = {
+            "alert_metric": ctx.metric,
+            "campaign": ctx.campaign_id,
+            "evidence_so_far": compact_evidence(ctx.evidence),
+            "requester_note": {
+                "present": ctx.note_present,
+                "flagged_injection": ctx.note_flagged_injection,
+                "refused_request_count": ctx.refused_request_count,
+            },
+        }
         data = self._ask_json(PLANNER_SYSTEM.format(tools=tools), f"<data>\n{json.dumps(payload)}\n</data>", "plan")
         try:
             return PlanStep.model_validate(data)
@@ -334,8 +406,11 @@ class ChatLLM:
 
     def hypothesize(self, evidence: dict[str, Any]) -> str | None:
         causes = ", ".join(c.value for c in RootCause)
-        system = HYPOTHESIS_SYSTEM.format(causes=causes, bot_score=self._settings.bot_score_threshold,
-                                          geo_share=self._settings.disallowed_geo_share_threshold)
+        system = HYPOTHESIS_SYSTEM.format(
+            causes=causes,
+            bot_score=self._settings.bot_score_threshold,
+            geo_share=self._settings.disallowed_geo_share_threshold,
+        )
         data = self._ask_json(system, f"<data>\n{json.dumps(compact_evidence(evidence))}\n</data>", "hypothesize")
         value = str(data.get("root_cause", ""))
         if value not in {c.value for c in RootCause}:
@@ -343,8 +418,9 @@ class ChatLLM:
         return value
 
     def analyst_note(self, verdict: dict[str, Any], evidence: dict[str, Any]) -> str | None:
-        text = self._ask(NOTE_SYSTEM, f"<data>\n{json.dumps(note_payload(verdict, evidence), default=str)}\n</data>",
-                         "analyst_note")
+        text = self._ask(
+            NOTE_SYSTEM, f"<data>\n{json.dumps(note_payload(verdict, evidence), default=str)}\n</data>", "analyst_note"
+        )
         note, flagged = sanitize_untrusted(text, max_len=400)  # filter model output too
         if flagged or not note:
             raise LLMOutputError("analyst note was empty or failed the output filter")

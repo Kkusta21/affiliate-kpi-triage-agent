@@ -55,6 +55,7 @@
       "hours_expected": 21,
       "clicks_total": 5461,
       "conversions_total": 250,
+      "revenue_total_usd": 7500.0,
       "clicks_per_hour": 260.0,
       "conversions_per_hour": 11.9,
       "conversion_rate": 0.0458,
@@ -66,6 +67,7 @@
       "hours_expected": 3,
       "clicks_total": 776,
       "conversions_total": 4,
+      "revenue_total_usd": 120.0,
       "clicks_per_hour": 258.7,
       "conversions_per_hour": 1.33,
       "conversion_rate": 0.0052,
@@ -88,9 +90,22 @@
       "missing_baseline_hours": 0
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "revenue",
+      "method": "threshold_only",
+      "result": "not_tested",
+      "p_value": null,
+      "alpha": null,
+      "statistic": null,
+      "observed": 40.0,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": "no statistical test for this metric; judged on the business threshold and volume"
+    },
     "statistically_significant": null,
-    "signal_strength": "strong",
+    "signal_strength": "moderate",
     "significant": true,
+    "test_inconclusive": false,
     "traffic_spike": false,
     "conversions_stopped": false,
     "seasonal": {
@@ -203,5 +218,5 @@
       "reason": "Evidence points to offer_cap_reached; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1004 | CMP-104 Travel insurance FR\nRoot cause: offer_cap_reached | severity: medium | confidence: 0.90\nKPI: revenue -88.8% vs baseline (conversion rate 4.58% -> 0.52%, 776 clicks in the last 3h). Estimated loss: $317/hour.\n     Same hours on the previous 5 weekdays: -88.6%. Signal strength: strong.\nWhy:\n  - Offer OFF-14 hit its daily cap (250/250); further conversions are rejected.\nRecommended actions (for a human to carry out):\n  1. Tell the affiliate the daily cap is reached so they can shift traffic.\n  2. Ask the advertiser for a cap increase if the campaign is profitable.\nRunbooks: offer_and_geo.md#Offer cap reached, offer_and_geo.md#Geo mismatch and disallowed country traffic\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> runbook_search"
+  "summary": "Triage ALT-1004 | CMP-104 Travel insurance FR\nRoot cause: offer_cap_reached | severity: medium | confidence: 0.90\nKPI: revenue -88.8% vs baseline (conversion rate 4.58% -> 0.52%, 776 clicks in the last 3h). Estimated loss: $317/hour.\n     Test: not tested (no statistical test for this metric; judged on the business threshold and volume).\n     Same hours on the previous 5 weekdays: -88.6%. Signal strength: moderate.\nWhy:\n  - Offer OFF-14 hit its daily cap (250/250); further conversions are rejected.\nRecommended actions (for a human to carry out):\n  1. Tell the affiliate the daily cap is reached so they can shift traffic.\n  2. Ask the advertiser for a cap increase if the campaign is profitable.\nRunbooks: offer_and_geo.md#Offer cap reached, offer_and_geo.md#Geo mismatch and disallowed country traffic\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> runbook_search"
 }

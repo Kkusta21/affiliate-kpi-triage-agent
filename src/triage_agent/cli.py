@@ -1,10 +1,11 @@
 """Command line entry point.
 
-    python -m triage_agent run samples/alerts/01_landing_page_down.json
-    python -m triage_agent run samples/alerts/01_landing_page_down.json --json
-    python -m triage_agent demo
-    python -m triage_agent incidents
+python -m triage_agent run samples/alerts/01_landing_page_down.json
+python -m triage_agent run samples/alerts/01_landing_page_down.json --json
+python -m triage_agent demo
+python -m triage_agent incidents
 """
+
 from __future__ import annotations
 
 import argparse
@@ -12,6 +13,7 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 from .agent import run_triage
 from .config import REPO_ROOT, SETTINGS
@@ -20,7 +22,7 @@ from .tools.actions import IncidentStore
 from .tracing import Tracer
 
 
-def _load(path: Path):
+def _load(path: Path) -> Any:
     try:
         return json.loads(path.read_text())
     except json.JSONDecodeError as exc:
@@ -56,6 +58,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("incidents", help="list incidents in the store")
     probe = sub.add_parser("probe", help="real HTTP probe of one landing page URL (needs network)")
     probe.add_argument("url")
+    evaluate = sub.add_parser("evaluate", help="score the agent on the labelled synthetic dataset")
+    evaluate.add_argument("--dataset", type=Path, default=None, help="default: eval/dataset.json")
+    evaluate.add_argument("--json", type=Path, default=None, help="also write the full report as JSON here")
     args = parser.parse_args(argv)
 
     if args.verbose:
@@ -74,7 +79,21 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "probe":
         return _probe(args.url)
+    if args.command == "evaluate":
+        return _evaluate(args.dataset, args.json, args.llm)
     return 2
+
+
+def _evaluate(dataset: Path | None, json_out: Path | None, llm_spec: str | None) -> int:
+    from .evaluation import DEFAULT_DATASET, evaluate, format_report
+
+    llm = make_llm(llm_spec) if llm_spec else None
+    report = evaluate(dataset or DEFAULT_DATASET, llm)
+    print(format_report(report))
+    if json_out:
+        json_out.write_text(json.dumps(report, indent=1) + "\n")
+        print(f"\nFull report: {json_out}")
+    return 0
 
 
 def _probe(url: str) -> int:
@@ -88,8 +107,7 @@ def _probe(url: str) -> int:
     from .tools.investigation import classify_status
 
     host = (urlsplit(url).hostname or "").lower()
-    probe = HttpLandingPageProbe((host,), SETTINGS.page_timeout_seconds, SETTINGS.page_max_bytes,
-                                 SETTINGS.page_pixel_marker)
+    probe = HttpLandingPageProbe((host,), SETTINGS.page_timeout_seconds, SETTINGS.page_max_bytes, SETTINGS.page_pixel_marker)
     try:
         result = probe.fetch(url)
     except (PermanentToolError, TransientToolError) as exc:
@@ -98,8 +116,18 @@ def _probe(url: str) -> int:
     finally:
         probe.close()
     title, flagged = sanitize_untrusted(result.pop("title"), max_len=80)
-    print(json.dumps({"ok": True, "outcome": classify_status(result["status_code"]), **result,
-                      "title": title, "untrusted_text_flagged": flagged}, indent=2))
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "outcome": classify_status(result["status_code"]),
+                **result,
+                "title": title,
+                "untrusted_text_flagged": flagged,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 

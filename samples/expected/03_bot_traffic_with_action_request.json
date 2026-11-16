@@ -56,6 +56,7 @@
       "hours_expected": 21,
       "clicks_total": 10501,
       "conversions_total": 630,
+      "revenue_total_usd": 4095.0,
       "clicks_per_hour": 500.0,
       "conversions_per_hour": 30.0,
       "conversion_rate": 0.06,
@@ -67,6 +68,7 @@
       "hours_expected": 3,
       "clicks_total": 4655,
       "conversions_total": 90,
+      "revenue_total_usd": 585.0,
       "clicks_per_hour": 1551.7,
       "conversions_per_hour": 30.0,
       "conversion_rate": 0.0193,
@@ -89,9 +91,22 @@
       "missing_baseline_hours": 0
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "conversion_rate",
+      "method": "two_proportion_z",
+      "result": "significant",
+      "p_value": 0.0,
+      "alpha": 0.01,
+      "statistic": -10.86,
+      "observed": 0.0193,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": ""
+    },
     "statistically_significant": true,
     "signal_strength": "strong",
     "significant": true,
+    "test_inconclusive": false,
     "traffic_spike": true,
     "conversions_stopped": false,
     "seasonal": {
@@ -278,5 +293,5 @@
       "reason": "Evidence points to traffic_quality; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1003 | CMP-103 Language app install ES\nRoot cause: traffic_quality | severity: high | confidence: 0.90\nKPI: conversion_rate -67.8% vs baseline (conversion rate 6.00% -> 1.93%, 4655 clicks in the last 3h). No direct revenue loss measured in this window.\n     Same hours on the previous 5 weekdays: -67.9%. Signal strength: strong.\nWhy:\n  - Sub source sub_778 sends 67% of clicks with bot score 0.91.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the flagged sub source and decide whether to block it.\n  2. Hold payout for the flagged source until the review is done.\n  3. Ask the affiliate for the placement behind the flagged sub source.\nRunbooks: traffic_quality.md#Bot traffic from a sub source, traffic_quality.md#Fraud review\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nRefused request: \"block sub_778\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nRefused request: \"pause the campaign\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nFlags: action_request_refused\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+  "summary": "Triage ALT-1003 | CMP-103 Language app install ES\nRoot cause: traffic_quality | severity: high | confidence: 0.90\nKPI: conversion_rate -67.8% vs baseline (conversion rate 6.00% -> 1.93%, 4655 clicks in the last 3h). No direct revenue loss measured in this window.\n     Test: two_proportion_z, one-sided p < 0.0001 (alpha 0.01): significant.\n     Same hours on the previous 5 weekdays: -67.9%. Signal strength: strong.\nWhy:\n  - Sub source sub_778 sends 67% of clicks with bot score 0.91.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the flagged sub source and decide whether to block it.\n  2. Hold payout for the flagged source until the review is done.\n  3. Ask the affiliate for the placement behind the flagged sub source.\nRunbooks: traffic_quality.md#Bot traffic from a sub source, traffic_quality.md#Fraud review\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nRefused request: \"block sub_778\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nRefused request: \"pause the campaign\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nFlags: action_request_refused\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
 }

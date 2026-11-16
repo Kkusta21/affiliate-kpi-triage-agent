@@ -1,4 +1,5 @@
 """Regenerate samples/expected/*.json from the sample alerts (offline planner, fresh store each)."""
+
 from __future__ import annotations
 
 import json
@@ -22,8 +23,9 @@ def normalise(result: dict) -> dict:
 
 def expected_for(alert_path: Path) -> dict:
     raw = json.loads(alert_path.read_text())
-    result = run_triage(raw, llm=OfflineLLM(), incidents=IncidentStore(":memory:"), tracer=Tracer(None),
-                        sleep=lambda _: None)
+    result = run_triage(
+        raw, llm=OfflineLLM(), incidents=IncidentStore(":memory:"), tracer=Tracer(None), sleep=lambda _: None
+    )
     return normalise(result.model_dump(mode="json"))
 
 

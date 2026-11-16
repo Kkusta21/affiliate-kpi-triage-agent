@@ -1,4 +1,5 @@
 """HTTP API: status codes, one response schema, health, and the optional API key."""
+
 from __future__ import annotations
 
 import pytest
@@ -16,8 +17,9 @@ from conftest import load_alert
 def client(tmp_path, monkeypatch):
     settings = SETTINGS.__class__(db_path=str(tmp_path / "incidents.db"), runs_dir=tmp_path / "runs")
     monkeypatch.setattr(api, "SETTINGS", settings)
-    monkeypatch.setattr(api, "run_triage", lambda raw, tracer: run_triage(
-        raw, tracer=tracer, settings=settings, sleep=lambda _: None))
+    monkeypatch.setattr(
+        api, "run_triage", lambda raw, tracer: run_triage(raw, tracer=tracer, settings=settings, sleep=lambda _: None)
+    )
     monkeypatch.delenv("TRIAGE_API_KEY", raising=False)
     return TestClient(api.app)
 
@@ -30,13 +32,16 @@ def test_completed_triage_is_200_with_the_full_result(client):
     assert result.alert_draft.status == "draft_pending_approval" and result.findings[0].primary
 
 
-@pytest.mark.parametrize("body, status, code", [
-    ({"alert_id": "nope"}, 422, "invalid_input"),
-    (load_alert("10_invalid_input.json"), 422, "invalid_input"),
-    ("just a string", 422, "invalid_input"),
-    ([1, 2, 3], 422, "invalid_input"),
-    (load_alert("11_unknown_campaign.json"), 404, "unknown_campaign"),
-])
+@pytest.mark.parametrize(
+    "body, status, code",
+    [
+        ({"alert_id": "nope"}, 422, "invalid_input"),
+        (load_alert("10_invalid_input.json"), 422, "invalid_input"),
+        ("just a string", 422, "invalid_input"),
+        ([1, 2, 3], 422, "invalid_input"),
+        (load_alert("11_unknown_campaign.json"), 404, "unknown_campaign"),
+    ],
+)
 def test_rejected_input_has_an_error_status_and_the_same_response_schema(client, body, status, code):
     response = client.post("/triage", json=body)
     assert response.status_code == status
@@ -51,8 +56,13 @@ def test_body_that_is_not_json_is_a_422_from_the_framework(client):
 
 def test_internal_failure_is_500_with_a_structured_body(client, monkeypatch):
     def broken(raw, tracer):
-        return TriageResult(run_id="r", status="failed", llm_mode="offline", summary="Triage failed",
-                            rejection={"code": "internal_error", "message": "boom", "errors": []})
+        return TriageResult(
+            run_id="r",
+            status="failed",
+            llm_mode="offline",
+            summary="Triage failed",
+            rejection={"code": "internal_error", "message": "boom", "errors": []},
+        )
 
     monkeypatch.setattr(api, "run_triage", broken)
     response = client.post("/triage", json=load_alert("01_landing_page_down.json"))
@@ -72,13 +82,20 @@ def test_health_reports_dependencies_without_auth(client, monkeypatch):
     monkeypatch.setenv("TRIAGE_API_KEY", "s3cret-key")
     body = client.get("/health")
     assert body.status_code == 200
-    assert body.json() == {"status": "ok", "llm_mode": "offline", "page_probe": "fixture", "campaigns": 12,
-                           "incident_store": "ok", "auth_required": True}
+    assert body.json() == {
+        "status": "ok",
+        "llm_mode": "offline",
+        "page_probe": "fixture",
+        "campaigns": 12,
+        "incident_store": "ok",
+        "auth_required": True,
+    }
 
 
 def test_health_is_503_when_the_campaign_data_is_missing(client, tmp_path, monkeypatch):
-    monkeypatch.setattr(api, "SETTINGS", SETTINGS.__class__(world_path=tmp_path / "missing.json",
-                                                            db_path=str(tmp_path / "i.db")))
+    monkeypatch.setattr(
+        api, "SETTINGS", SETTINGS.__class__(world_path=tmp_path / "missing.json", db_path=str(tmp_path / "i.db"))
+    )
     response = client.get("/health")
     assert response.status_code == 503 and response.json()["status"] == "degraded"
 

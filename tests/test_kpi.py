@@ -1,4 +1,5 @@
 """KPI maths on hand-built history: windows, gaps, zero denominators, significance, seasonality."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -11,7 +12,7 @@ from triage_agent.tools import INVESTIGATION_TOOLS, ToolContext
 
 from conftest import alert
 
-END = datetime(2026, 11, 16, 12, tzinfo=timezone.utc)   # a Monday
+END = datetime(2026, 11, 16, 12, tzinfo=timezone.utc)  # a Monday
 
 
 class History:
@@ -32,16 +33,23 @@ def history(hours=24, clicks=100, conversions=4, current=None, drop=(), end=END,
         ts = end - timedelta(hours=back)
         scale = weekend_scale if ts.weekday() >= 5 else 1.0
         converted = round(conversions * scale * scale)
-        rows.append({"ts": ts.isoformat(), "clicks": round(clicks * scale), "conversions": converted,
-                     "revenue_usd": converted * 10.0})
-    for row, (c, v) in zip(rows[-len(current or []):] if current else [], current or []):
+        rows.append(
+            {
+                "ts": ts.isoformat(),
+                "clicks": round(clicks * scale),
+                "conversions": converted,
+                "revenue_usd": converted * 10.0,
+            }
+        )
+    for row, (c, v) in zip(rows[-len(current or []) :] if current else [], current or []):
         row.update(clicks=c, conversions=v, revenue_usd=v * 10.0)
     return [row for back, row in zip(range(hours, 0, -1), rows) if back not in drop]
 
 
 def snapshot(rows, **alert_kw):
-    ctx = ToolContext(alert=Alert.model_validate(alert(**alert_kw)), campaign={"id": "CMP-1"},
-                      ds=History(rows), settings=SETTINGS)
+    ctx = ToolContext(
+        alert=Alert.model_validate(alert(**alert_kw)), campaign={"id": "CMP-1"}, ds=History(rows), settings=SETTINGS
+    )
     return INVESTIGATION_TOOLS["kpi_snapshot"].fn(ctx)
 
 
@@ -55,9 +63,13 @@ def test_a_clear_drop_is_significant_with_supporting_statistics():
 
 def test_a_missing_bucket_is_not_counted_as_an_hour_of_zero_traffic():
     full = snapshot(history())
-    gap = snapshot(history(drop={2, 10}))     # one current and one baseline bucket missing
-    assert gap["data_quality"] == {"timestamped": True, "history_hours": 22,
-                                   "missing_current_hours": 1, "missing_baseline_hours": 1}
+    gap = snapshot(history(drop={2, 10}))  # one current and one baseline bucket missing
+    assert gap["data_quality"] == {
+        "timestamped": True,
+        "history_hours": 22,
+        "missing_current_hours": 1,
+        "missing_baseline_hours": 1,
+    }
     assert gap["current"]["clicks_per_hour"] == full["current"]["clicks_per_hour"] == 100.0
     assert gap["change_pct"]["clicks"] == 0.0 and gap["data_sufficient"] and not gap["significant"]
 
@@ -66,7 +78,7 @@ def test_too_few_buckets_is_insufficient_data_not_a_verdict():
     kpi = snapshot(history(current=[(100, 0), (100, 0), (100, 0)], drop={1, 2}))
     assert not kpi["data_sufficient"] and not kpi["significant"]
     verdict = rules.evaluate({"kpi_snapshot": kpi}, SETTINGS)
-    assert rules.next_needed({"kpi_snapshot": kpi}, SETTINGS) is None        # no point running more tools
+    assert rules.next_needed({"kpi_snapshot": kpi}, SETTINGS) is None  # no point running more tools
     assert verdict.root_cause is RootCause.unknown and verdict.needs_human_review
     assert "incomplete" in verdict.reasons[0] and verdict.est_revenue_loss_per_hour_usd == 0
     assert verdict.recommended_actions == rules.INSUFFICIENT_DATA_ACTIONS
@@ -89,7 +101,7 @@ def test_zero_baseline_gives_no_change_value_instead_of_a_fake_zero():
 def test_zero_current_clicks_does_not_divide_by_zero():
     kpi = snapshot(history(current=[(0, 0)] * 3), metric="clicks")
     assert kpi["current"]["conversion_rate"] == 0.0 and kpi["change_pct"]["clicks"] == -100.0
-    assert kpi["significant"]                       # a clicks alert is judged on the baseline volume
+    assert kpi["significant"]  # a clicks alert is judged on the baseline volume
 
 
 def test_a_drop_within_chance_for_the_volume_is_not_significant():
@@ -116,16 +128,17 @@ def test_alert_time_inside_an_hour_uses_the_same_complete_buckets():
 
 
 def test_rows_without_timestamps_fall_back_to_positional_windows():
-    rows = [{"clicks": 100, "conversions": 4, "revenue_usd": 40.0} for _ in range(21)] + \
-           [{"clicks": 100, "conversions": 0, "revenue_usd": 0.0} for _ in range(3)]
+    rows = [{"clicks": 100, "conversions": 4, "revenue_usd": 40.0} for _ in range(21)] + [
+        {"clicks": 100, "conversions": 0, "revenue_usd": 0.0} for _ in range(3)
+    ]
     kpi = snapshot(rows)
     assert not kpi["data_quality"]["timestamped"] and not kpi["seasonal"]["available"]
     assert kpi["significant"] and kpi["baseline"]["hours_found"] == 21
 
 
 def test_seasonal_baseline_needs_enough_earlier_days_of_the_same_type():
-    assert not snapshot(history(hours=24))["seasonal"]["available"]            # one day of history
-    season = snapshot(history(hours=24 * 8))["seasonal"]                        # Monday: five earlier weekdays
+    assert not snapshot(history(hours=24))["seasonal"]["available"]  # one day of history
+    season = snapshot(history(hours=24 * 8))["seasonal"]  # Monday: five earlier weekdays
     assert season["available"] and season["day_type"] == "weekdays" and season["days_used"] == 5
 
 
@@ -133,7 +146,7 @@ def test_weekend_level_is_compared_with_earlier_weekends_not_with_friday():
     saturday = datetime(2026, 11, 14, 12, tzinfo=timezone.utc)
     rows = history(hours=24 * 22, end=saturday, weekend_scale=0.5)
     kpi = snapshot(rows, metric="revenue", observed_at="2026-11-14T12:00:00Z")
-    assert kpi["metric_change_pct"] <= -30                      # looks like a drop against Friday
+    assert kpi["metric_change_pct"] <= -30  # looks like a drop against Friday
     assert kpi["seasonal"]["day_type"] == "weekend_days" and kpi["seasonal"]["metric_change_pct"] == 0.0
     assert kpi["seasonal_explained"] and not kpi["significant"]
     verdict = rules.evaluate({"kpi_snapshot": kpi}, SETTINGS)

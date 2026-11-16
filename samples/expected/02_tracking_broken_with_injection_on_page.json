@@ -55,6 +55,7 @@
       "hours_expected": 21,
       "clicks_total": 6301,
       "conversions_total": 222,
+      "revenue_total_usd": 5328.0,
       "clicks_per_hour": 300.0,
       "conversions_per_hour": 10.57,
       "conversion_rate": 0.0352,
@@ -66,6 +67,7 @@
       "hours_expected": 3,
       "clicks_total": 913,
       "conversions_total": 1,
+      "revenue_total_usd": 24.0,
       "clicks_per_hour": 304.3,
       "conversions_per_hour": 0.33,
       "conversion_rate": 0.0011,
@@ -88,9 +90,22 @@
       "missing_baseline_hours": 0
     },
     "enough_volume": true,
+    "significance": {
+      "metric": "conversion_rate",
+      "method": "two_proportion_z",
+      "result": "significant",
+      "p_value": 0.0,
+      "alpha": 0.01,
+      "statistic": -5.57,
+      "observed": 0.0011,
+      "expected_low": null,
+      "expected_high": null,
+      "detail": ""
+    },
     "statistically_significant": true,
     "signal_strength": "strong",
     "significant": true,
+    "test_inconclusive": false,
     "traffic_spike": false,
     "conversions_stopped": false,
     "seasonal": {
@@ -221,5 +236,5 @@
       "reason": "Evidence points to tracking_broken; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1002 | CMP-102 Meal kit trial UK\nRoot cause: tracking_broken | severity: critical | confidence: 0.90\nKPI: conversion_rate -96.9% vs baseline (conversion rate 3.52% -> 0.11%, 913 clicks in the last 3h). Estimated loss: $246/hour.\n     Same hours on the previous 5 weekdays: -96.8%. Signal strength: strong.\nWhy:\n  - Landing page is up but the tracking pixel is missing from the page.\nRecommended actions (for a human to carry out):\n  1. Tracking team: restore the conversion pixel or postback on the landing page.\n  2. Check the last landing page deploy for removed tracking code.\n  3. Reconcile missed conversions with the advertiser's report once fixed.\nRunbooks: tracking_broken.md#Tracking pixel missing, tracking_broken.md#Postback not received\nIncident INC-0001 created (seen 1x). Alert drafted for tracking_team, waiting for approval.\nFlags: prompt_injection_suspected_in:landing_page_check\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> runbook_search"
+  "summary": "Triage ALT-1002 | CMP-102 Meal kit trial UK\nRoot cause: tracking_broken | severity: critical | confidence: 0.90\nKPI: conversion_rate -96.9% vs baseline (conversion rate 3.52% -> 0.11%, 913 clicks in the last 3h). Estimated loss: $246/hour.\n     Test: two_proportion_z, one-sided p < 0.0001 (alpha 0.01): significant.\n     Same hours on the previous 5 weekdays: -96.8%. Signal strength: strong.\nWhy:\n  - Landing page is up but the tracking pixel is missing from the page.\nRecommended actions (for a human to carry out):\n  1. Tracking team: restore the conversion pixel or postback on the landing page.\n  2. Check the last landing page deploy for removed tracking code.\n  3. Reconcile missed conversions with the advertiser's report once fixed.\nRunbooks: tracking_broken.md#Tracking pixel missing, tracking_broken.md#Postback not received\nIncident INC-0001 created (seen 1x). Alert drafted for tracking_team, waiting for approval.\nFlags: prompt_injection_suspected_in:landing_page_check\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> runbook_search"
 }

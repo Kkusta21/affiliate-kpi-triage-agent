@@ -1,4 +1,5 @@
 """End to end: sample alert in, full workflow, structured result out."""
+
 from __future__ import annotations
 
 import json
@@ -23,15 +24,18 @@ def test_sample_matches_expected_output(name):
     assert expected_for(ALERTS / name) == expected
 
 
-@pytest.mark.parametrize("name, cause, owner, steps", [
-    ("01_landing_page_down.json", "landing_page_down", "tech_oncall", 3),
-    ("02_tracking_broken_with_injection_on_page.json", "tracking_broken", "tracking_team", 5),
-    ("03_bot_traffic_with_action_request.json", "traffic_quality", "affiliate_manager", 6),
-    ("04_offer_cap_reached.json", "offer_cap_reached", "affiliate_manager", 4),
-    ("05_geo_mismatch.json", "geo_mismatch", "affiliate_manager", 6),
-    ("07_unknown_cause_flaky_probe.json", "unknown", "affiliate_manager", 6),
-    ("12_slow_page_and_offer_cap.json", "landing_page_down", "tech_oncall", 4),
-])
+@pytest.mark.parametrize(
+    "name, cause, owner, steps",
+    [
+        ("01_landing_page_down.json", "landing_page_down", "tech_oncall", 3),
+        ("02_tracking_broken_with_injection_on_page.json", "tracking_broken", "tracking_team", 5),
+        ("03_bot_traffic_with_action_request.json", "traffic_quality", "affiliate_manager", 6),
+        ("04_offer_cap_reached.json", "offer_cap_reached", "affiliate_manager", 4),
+        ("05_geo_mismatch.json", "geo_mismatch", "affiliate_manager", 6),
+        ("07_unknown_cause_flaky_probe.json", "unknown", "affiliate_manager", 6),
+        ("12_slow_page_and_offer_cap.json", "landing_page_down", "tech_oncall", 4),
+    ],
+)
 def test_business_cases(triage, name, cause, owner, steps):
     result = triage(load_alert(name))
     assert result.status == "completed" and result.root_cause.value == cause
@@ -94,12 +98,15 @@ def test_injection_on_landing_page_changes_nothing(triage):
     assert "ignore previous instructions" not in result.model_dump_json().lower()
 
 
-@pytest.mark.parametrize("raw, code", [
-    (load_alert("10_invalid_input.json"), "invalid_input"),
-    (load_alert("11_unknown_campaign.json"), "unknown_campaign"),
-    ("not json at all", "invalid_input"),
-    (None, "invalid_input"),
-])
+@pytest.mark.parametrize(
+    "raw, code",
+    [
+        (load_alert("10_invalid_input.json"), "invalid_input"),
+        (load_alert("11_unknown_campaign.json"), "unknown_campaign"),
+        ("not json at all", "invalid_input"),
+        (None, "invalid_input"),
+    ],
+)
 def test_bad_input_is_rejected_without_running_tools(triage, store, raw, code):
     result = triage(raw)
     assert result.status == "rejected" and result.rejection["code"] == code
@@ -132,14 +139,19 @@ def test_http_api(tmp_path, monkeypatch):
     from triage_agent.config import SETTINGS
 
     monkeypatch.setattr(api, "SETTINGS", SETTINGS.__class__(db_path=str(tmp_path / "i.db"), runs_dir=tmp_path / "runs"))
-    monkeypatch.setattr(api, "run_triage", lambda raw, tracer: __import__("triage_agent").run_triage(
-        raw, tracer=tracer, settings=api.SETTINGS, sleep=lambda _: None))
+    monkeypatch.setattr(
+        api,
+        "run_triage",
+        lambda raw, tracer: __import__("triage_agent").run_triage(
+            raw, tracer=tracer, settings=api.SETTINGS, sleep=lambda _: None
+        ),
+    )
     client = TestClient(api.app)
 
     ok = client.post("/triage", json=load_alert("01_landing_page_down.json"))
     assert ok.status_code == 200 and ok.json()["root_cause"] == "landing_page_down"
     bad = client.post("/triage", json={"alert_id": "nope"})
-    assert bad.status_code == 422 and bad.json()["status"] == "rejected"   # was 200 before the API returned proper codes
+    assert bad.status_code == 422 and bad.json()["status"] == "rejected"  # was 200 before the API returned proper codes
     assert client.get("/incidents").json()[0]["incident_id"] == "INC-0001"
     assert "01_landing_page_down" in client.get("/samples").json()
     assert "Run triage" in client.get("/").text

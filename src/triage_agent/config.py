@@ -3,6 +3,7 @@
 Every threshold can be overridden with an environment variable (TRIAGE_<NAME>), read once
 at import. Tests build their own `Settings(...)` instead of touching the environment.
 """
+
 from __future__ import annotations
 
 import os
@@ -39,7 +40,9 @@ class Settings:
     # A drop only counts when there is enough traffic to trust it and it is not statistical noise
     min_clicks_for_signal: int = _env_int("MIN_CLICKS_FOR_SIGNAL", 100)
     drop_threshold_pct: float = _env_float("DROP_THRESHOLD_PCT", -30.0)
-    z_threshold: float = _env_float("Z_THRESHOLD", 2.58)           # about 99% for a two-sided test
+    significance_alpha: float = _env_float("SIGNIFICANCE_ALPHA", 0.01)  # one-sided, see stats.py
+    epc_min_baseline_conversions: int = _env_int("EPC_MIN_BASELINE_CONVERSIONS", 20)
+    epc_bootstrap_draws: int = 2000
     spike_threshold_pct: float = _env_float("SPIKE_THRESHOLD_PCT", 100.0)
     # Root cause thresholds
     bot_score_threshold: float = _env_float("BOT_SCORE_THRESHOLD", 0.7)
@@ -55,7 +58,7 @@ class Settings:
     tool_max_attempts: int = 3
     tool_backoff_seconds: float = 0.5
     llm_max_attempts: int = 2
-    planner_max_consecutive_failures: int = 2   # then the planner model is skipped for the rest of the run
+    planner_max_consecutive_failures: int = 2  # then the planner model is skipped for the rest of the run
     # Severity
     critical_loss_per_hour_usd: float = 200.0
     high_loss_per_hour_usd: float = 50.0
