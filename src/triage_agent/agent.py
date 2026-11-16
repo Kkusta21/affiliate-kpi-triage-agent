@@ -48,7 +48,7 @@ class State(TypedDict, total=False):
     raw_input: Any
     alert: dict[str, Any]
     campaign: dict[str, Any]
-    safe_note: str
+    note_facts: dict[str, Any]
     rejection: dict[str, Any]
     flags: list[str]
     refused: list[dict[str, str]]
@@ -95,11 +95,14 @@ def build_graph(deps: Deps):
         refused = find_refused_requests(alert.note)
         if refused:
             flags.append("action_request_refused")
-        safe_note, injected = sanitize_untrusted(alert.note, max_len=300)
+        # The note itself never reaches the model. Only these facts about it do.
+        _, injected = sanitize_untrusted(alert.note, max_len=300)
         if injected:
             flags.append("prompt_injection_suspected_in_note")
         tracer.event("guardrail", outcome="accepted", flags=flags, refused_requests=refused)
-        return {"alert": alert.model_dump(mode="json"), "campaign": campaign, "safe_note": safe_note,
+        note_facts = {"note_present": bool(alert.note and alert.note.strip()), "note_flagged_injection": injected,
+                      "refused_request_count": len(refused)}
+        return {"alert": alert.model_dump(mode="json"), "campaign": campaign, "note_facts": note_facts,
                 "flags": flags, "refused": refused, "evidence": {}, "steps": [], "planner_steps": 0,
                 "phase": "investigate"}
 
@@ -126,7 +129,7 @@ def build_graph(deps: Deps):
         ctx = PlanContext(
             metric=state["alert"]["metric"], campaign_id=state["campaign"]["id"], evidence=evidence,
             remaining_tools=[name for name in INVESTIGATION_TOOLS if name not in evidence],
-            safe_note=state.get("safe_note", ""),
+            **state.get("note_facts", {}),
         )
         chosen_by = deps.llm.mode
         flags = state.get("flags", [])
@@ -199,12 +202,22 @@ def build_graph(deps: Deps):
                     "next_reason": "Required for a verdict but skipped by the planner.",
                     "flags": _add_flag(state, "coverage_check_forced_tool")}
 
-        hypothesis = deps.llm.hypothesize(evidence)
+        flags = state.get("flags", [])
+        try:
+            hypothesis = deps.llm.hypothesize(evidence)
+        except Exception as exc:  # the verdict does not need the hypothesis, but the failure must be visible
+            hypothesis = None
+            flags = _llm_call_failed(state, "hypothesize", exc, "hypothesis_unavailable")
         verdict = rules.evaluate(evidence, s, llm_hypothesis=hypothesis)
         tracer.event("diagnosis", root_cause=verdict.root_cause.value, severity=verdict.severity.value,
                      confidence=verdict.confidence, needs_human_review=verdict.needs_human_review,
-                     llm_hypothesis=hypothesis, reasons=verdict.reasons)
-        return {"verdict": verdict.model_dump(mode="json"), "llm_hypothesis": hypothesis, "next_tool": None}
+                     llm_hypothesis=hypothesis, reasons=verdict.reasons, other_findings=verdict.other_findings)
+        return {"verdict": verdict.model_dump(mode="json"), "llm_hypothesis": hypothesis, "next_tool": None,
+                "flags": flags}
+
+    def _llm_call_failed(state: State, call: str, exc: Exception, flag: str) -> list[str]:
+        tracer.event("llm_call_failed", call=call, error_type=type(exc).__name__, error=str(exc)[:200])
+        return _add_flag(state, flag)
 
     # -------------------------------------------------------------------- act
     def act(state: State) -> State:
@@ -214,11 +227,16 @@ def build_graph(deps: Deps):
             return {"incident": IncidentRef(action="none").model_dump(), "alert_draft": None}
         incident = upsert_incident(deps.incidents, state["campaign"]["id"], state["alert"]["alert_id"], verdict)
         tracer.event("tool_call", tool="incident_store", attempt=1, ok=True, result=digest(incident.model_dump()))
-        note = deps.llm.analyst_note(state["verdict"], state["evidence"])
+        flags = state.get("flags", [])
+        try:
+            note = deps.llm.analyst_note(state["verdict"], state["evidence"])
+        except Exception as exc:  # the draft is complete without the note, but the failure must be visible
+            note = None
+            flags = _llm_call_failed(state, "analyst_note", exc, "analyst_note_unavailable")
         draft = draft_alert(state["campaign"], state["evidence"].get("kpi_snapshot", {}), verdict, incident, note)
         tracer.event("tool_call", tool="draft_alert", attempt=1, ok=True,
                      result=digest({"to_role": draft.to_role, "subject": draft.subject, "status": draft.status}))
-        return {"incident": incident.model_dump(), "alert_draft": draft.model_dump()}
+        return {"incident": incident.model_dump(), "alert_draft": draft.model_dump(), "flags": flags}
 
     # --------------------------------------------------------------- finalize
     def finalize(state: State) -> State:
@@ -280,6 +298,9 @@ def _summary(result: TriageResult) -> str:
         )
     lines.append("Why:")
     lines += [f"  - {reason}" for reason in result.reasons]
+    if result.other_findings:
+        lines.append("Also found (lower priority, check after the main cause):")
+        lines += [f"  - {finding}" for finding in result.other_findings]
     if result.recommended_actions:
         lines.append("Recommended actions (for a human to carry out):")
         lines += [f"  {i}. {a}" for i, a in enumerate(result.recommended_actions, 1)]
@@ -322,7 +343,7 @@ def _build_result(state: State, deps: Deps) -> TriageResult:
         alert_id=alert["alert_id"], campaign_id=alert["campaign_id"], campaign_name=state["campaign"]["name"],
         root_cause=verdict.root_cause, severity=verdict.severity, confidence=verdict.confidence,
         needs_human_review=verdict.needs_human_review, reasons=verdict.reasons,
-        recommended_actions=verdict.recommended_actions,
+        other_findings=verdict.other_findings, recommended_actions=verdict.recommended_actions,
         est_revenue_loss_per_hour_usd=verdict.est_revenue_loss_per_hour_usd,
         llm_hypothesis=state.get("llm_hypothesis"),
         kpi=evidence.get("kpi_snapshot", {}),

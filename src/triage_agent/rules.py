@@ -70,12 +70,39 @@ def _failed(evidence: dict[str, Any], tool: str) -> bool:
     return tool in evidence and "error" in evidence[tool]
 
 
-def _find_cause(evidence: dict[str, Any], s: Settings) -> tuple[RootCause | None, list[str], str | None]:
-    """Walk the checks in order. Returns (cause, reasons, missing_tool)."""
+Finding = tuple[RootCause, list[str]]
+
+
+class _Walk:
+    """Result of walking the checks: the first finding wins, later ones become `other_findings`."""
+
+    def __init__(self) -> None:
+        self.findings: list[Finding] = []
+
+    def add(self, cause: RootCause, reasons: list[str]) -> None:
+        self.findings.append((cause, reasons))
+
+    def result(self, missing: str | None = None) -> tuple[RootCause | None, list[str], str | None, list[str]]:
+        if not self.findings:
+            return None, [], missing, []
+        (cause, reasons), rest = self.findings[0], self.findings[1:]
+        others = [f"{c.value}: {' '.join(r)}" for c, r in rest]
+        return cause, reasons, missing, others
+
+
+def _find_cause(evidence: dict[str, Any], s: Settings) -> tuple[RootCause | None, list[str], str | None, list[str]]:
+    """Walk the checks in order. Returns (cause, reasons, missing_tool, other_findings).
+
+    Most findings are conclusive and stop the walk. A landing page that is up but slow is not:
+    it explains part of the drop, so the walk records it as the primary cause and keeps going
+    to catch a second problem (for example the offer cap) as an `other_finding`.
+    """
+    walk = _Walk()
     if "kpi_snapshot" not in evidence:
-        return None, [], "kpi_snapshot"
+        return walk.result("kpi_snapshot")
     if _failed(evidence, "kpi_snapshot"):
-        return RootCause.unknown, ["KPI data could not be loaded, so the drop cannot be confirmed."], None
+        walk.add(RootCause.unknown, ["KPI data could not be loaded, so the drop cannot be confirmed."])
+        return walk.result()
 
     kpi = evidence["kpi_snapshot"]
     if not kpi["significant"]:
@@ -85,81 +112,92 @@ def _find_cause(evidence: dict[str, Any], s: Settings) -> tuple[RootCause | None
         else:
             reason = (f"{kpi['metric']} moved {kpi['metric_change_pct']}%, inside the normal range "
                       f"(alert threshold {s.drop_threshold_pct}%).")
-        return RootCause.no_anomaly, [reason], None
+        walk.add(RootCause.no_anomaly, [reason])
+        return walk.result()
 
     # 1. Landing page
     if "landing_page_check" not in evidence:
-        return None, [], "landing_page_check"
+        return walk.result("landing_page_check")
     page = evidence["landing_page_check"]
-    if _ok(evidence, "landing_page_check") and (not page["reachable"] or page["slow"]):
-        return RootCause.landing_page_down, [
+    if _ok(evidence, "landing_page_check") and not page["reachable"]:
+        walk.add(RootCause.landing_page_down, [
             f"Landing page returned HTTP {page['status_code']} in {page['latency_ms']} ms.",
             "Clicks are still arriving, so every visitor hits a broken page.",
-        ], None
+        ])
+        return walk.result()  # a dead page explains everything, stop here
+    if _ok(evidence, "landing_page_check") and page["slow"]:
+        walk.add(RootCause.landing_page_down, [
+            f"Landing page returned HTTP {page['status_code']} but took {page['latency_ms']} ms, "
+            f"over the {s.page_latency_limit_ms} ms limit.",
+            "Many visitors leave before the page loads.",
+        ])  # not conclusive: keep checking for a second cause
 
     # 2. Offer
     if "offer_status" not in evidence:
-        return None, [], "offer_status"
+        return walk.result("offer_status")
     if _ok(evidence, "offer_status"):
         offer = evidence["offer_status"]
         if offer["status"] != "active":
-            return RootCause.offer_paused, [f"Offer {offer['offer_id']} is {offer['status']} at the advertiser."], None
+            walk.add(RootCause.offer_paused, [f"Offer {offer['offer_id']} is {offer['status']} at the advertiser."])
+            return walk.result()
         if offer["cap_reached"]:
-            return RootCause.offer_cap_reached, [
+            walk.add(RootCause.offer_cap_reached, [
                 f"Offer {offer['offer_id']} hit its daily cap "
                 f"({offer['conversions_today']}/{offer['daily_cap']}); further conversions are rejected.",
-            ], None
+            ])
+            return walk.result()
 
     # 3. Tracking
     if "tracking_check" not in evidence:
-        return None, [], "tracking_check"
+        return walk.result("tracking_check")
     if _ok(evidence, "landing_page_check") and not page["has_tracking_pixel"]:
-        return RootCause.tracking_broken, [
-            "Landing page is up but the tracking pixel is missing from the page.",
-        ], None
+        walk.add(RootCause.tracking_broken, ["Landing page is up but the tracking pixel is missing from the page."])
+        return walk.result()
     if _ok(evidence, "tracking_check"):
         tracking = evidence["tracking_check"]
         ratio = tracking["postback_ratio"]
         if tracking["pixel_events"] == 0 and tracking["clicks_recorded"] >= s.min_clicks_for_signal:
-            return RootCause.tracking_broken, [
-                f"{tracking['clicks_recorded']} clicks recorded but zero pixel events.",
-            ], None
+            walk.add(RootCause.tracking_broken, [f"{tracking['clicks_recorded']} clicks recorded but zero pixel events."])
+            return walk.result()
         if ratio is not None and ratio < s.postback_ratio_threshold:
-            return RootCause.tracking_broken, [
+            walk.add(RootCause.tracking_broken, [
                 f"Only {tracking['postbacks_received']} postbacks for {tracking['pixel_events']} "
                 f"pixel events (ratio {ratio}).",
-            ], None
+            ])
+            return walk.result()
 
     # 4. Traffic
     if "traffic_quality" not in evidence:
-        return None, [], "traffic_quality"
+        return walk.result("traffic_quality")
     if _ok(evidence, "traffic_quality"):
         traffic = evidence["traffic_quality"]
         worst = traffic["worst_source"]
         if worst["bot_score"] >= s.bot_score_threshold and worst["share"] >= s.bad_source_share_threshold:
-            return RootCause.traffic_quality, [
+            walk.add(RootCause.traffic_quality, [
                 f"Sub source {worst['sub_id']} sends {round(worst['share'] * 100)}% of clicks "
                 f"with bot score {worst['bot_score']}.",
-            ], None
+            ])
+            return walk.result()
         if traffic["disallowed_geo_share"] >= s.disallowed_geo_share_threshold:
-            return RootCause.geo_mismatch, [
+            walk.add(RootCause.geo_mismatch, [
                 f"{round(traffic['disallowed_geo_share'] * 100)}% of traffic comes from "
                 f"{', '.join(traffic['disallowed_geos'])}, which the offer does not accept.",
-            ], None
+            ])
+            return walk.result()
 
-    return RootCause.unknown, ["The drop is real but landing page, offer, tracking and traffic "
-                               "checks found no cause."], None
+    if not walk.findings:
+        walk.add(RootCause.unknown, ["The drop is real but landing page, offer, tracking and traffic "
+                                     "checks found no cause."])
+    return walk.result()
 
 
 def next_needed(evidence: dict[str, Any], settings: Settings) -> str | None:
     """Which check is still required before a verdict is possible. None means ready."""
-    _, _, missing = _find_cause(evidence, settings)
-    return missing
+    return _find_cause(evidence, settings)[2]
 
 
 def provisional_cause(evidence: dict[str, Any], settings: Settings) -> RootCause | None:
-    cause, _, _ = _find_cause(evidence, settings)
-    return cause
+    return _find_cause(evidence, settings)[0]
 
 
 def _severity(cause: RootCause, loss: float, s: Settings) -> Severity:
@@ -178,11 +216,14 @@ def _severity(cause: RootCause, loss: float, s: Settings) -> Severity:
 def evaluate(evidence: dict[str, Any], settings: Settings, llm_hypothesis: str | None = None) -> Verdict:
     """Final verdict. Normally called once `next_needed` returns None. If the step budget
     ran out before that, the verdict is `unknown` and goes to a human."""
-    cause, reasons, missing = _find_cause(evidence, settings)
+    cause, reasons, missing, others = _find_cause(evidence, settings)
     if cause is None:
         # Budget ran out before the checks were complete: never guess.
         cause = RootCause.unknown
         reasons = [f"Investigation stopped before '{missing}' could run."]
+    elif missing:
+        # A non-conclusive finding is kept, but the run is not treated as complete.
+        reasons = reasons + [f"Investigation stopped before '{missing}' could run."]
 
     unavailable = [tool for tool in CHECK_ORDER if _failed(evidence, tool)]
     kpi_ok = _ok(evidence, "kpi_snapshot")
@@ -196,7 +237,9 @@ def evaluate(evidence: dict[str, Any], settings: Settings, llm_hypothesis: str |
         confidence = 0.7
     else:
         confidence = 0.9
-    needs_review = cause is RootCause.unknown or bool(unavailable)
+    needs_review = cause is RootCause.unknown or bool(unavailable) or bool(missing)
+    if missing and cause is not RootCause.unknown:
+        confidence = min(confidence, 0.7)
 
     if unavailable:
         reasons = reasons + [f"Checks unavailable during this run: {', '.join(unavailable)}."]
@@ -213,6 +256,7 @@ def evaluate(evidence: dict[str, Any], settings: Settings, llm_hypothesis: str |
         needs_human_review=needs_review,
         reasons=reasons,
         recommended_actions=ACTIONS[cause],
+        other_findings=others,
         owner_role=OWNER.get(cause),
         est_revenue_loss_per_hour_usd=loss,
         unavailable_checks=unavailable,

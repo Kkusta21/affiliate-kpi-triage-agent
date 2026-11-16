@@ -79,6 +79,16 @@
       "manager": "omar",
       "landing_page_url": "https://lp.example-offers.test/stream-se",
       "payout_usd": 15.0
+    },
+    "CMP-109": {
+      "id": "CMP-109",
+      "name": "Solar panel quote ES",
+      "offer_id": "OFF-19",
+      "affiliate_id": "AFF-209",
+      "affiliate_name": "Iberia Leads",
+      "manager": "omar",
+      "landing_page_url": "https://lp.example-offers.test/solar-es",
+      "payout_usd": 20.0
     }
   },
   "offers": {
@@ -165,6 +175,16 @@
         "NO"
       ],
       "payout_usd": 15.0
+    },
+    "OFF-19": {
+      "id": "OFF-19",
+      "status": "active",
+      "daily_cap": 200,
+      "conversions_today": 200,
+      "allowed_geos": [
+        "ES"
+      ],
+      "payout_usd": 20.0
     }
   },
   "kpi": {
@@ -1351,6 +1371,154 @@
           "revenue_usd": 90.0
         }
       ]
+    },
+    "CMP-109": {
+      "hourly": [
+        {
+          "hour": 0,
+          "clicks": 295,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 1,
+          "clicks": 302,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 2,
+          "clicks": 298,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 3,
+          "clicks": 305,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 4,
+          "clicks": 301,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 5,
+          "clicks": 297,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 6,
+          "clicks": 304,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 7,
+          "clicks": 300,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 8,
+          "clicks": 296,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 9,
+          "clicks": 303,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 10,
+          "clicks": 299,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 11,
+          "clicks": 295,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 12,
+          "clicks": 302,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 13,
+          "clicks": 298,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 14,
+          "clicks": 305,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 15,
+          "clicks": 301,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 16,
+          "clicks": 297,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 17,
+          "clicks": 304,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 18,
+          "clicks": 300,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 19,
+          "clicks": 296,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 20,
+          "clicks": 303,
+          "conversions": 15,
+          "revenue_usd": 300.0
+        },
+        {
+          "hour": 21,
+          "clicks": 298,
+          "conversions": 4,
+          "revenue_usd": 80.0
+        },
+        {
+          "hour": 22,
+          "clicks": 301,
+          "conversions": 1,
+          "revenue_usd": 20.0
+        },
+        {
+          "hour": 23,
+          "clicks": 296,
+          "conversions": 0,
+          "revenue_usd": 0.0
+        }
+      ]
     }
   },
   "landing_pages": {
@@ -1439,6 +1607,16 @@
           "has_tracking_pixel": true
         }
       ]
+    },
+    "https://lp.example-offers.test/solar-es": {
+      "responses": [
+        {
+          "status_code": 200,
+          "latency_ms": 14500,
+          "title": "Solar panel quote",
+          "has_tracking_pixel": true
+        }
+      ]
     }
   },
   "tracking": {
@@ -1493,6 +1671,13 @@
     },
     "CMP-108": {
       "permanent_error": "tracker API returned 502 Bad Gateway"
+    },
+    "CMP-109": {
+      "clicks_recorded": 895,
+      "pixel_events": 5,
+      "postbacks_received": 5,
+      "postback_errors": 0,
+      "minutes_since_last_postback": 4
     }
   },
   "traffic": {
@@ -1697,6 +1882,32 @@
       "geo_share": {
         "SE": 0.9,
         "NO": 0.1
+      }
+    },
+    "CMP-109": {
+      "sources": [
+        {
+          "sub_id": "sub_101",
+          "clicks": 448,
+          "bot_score": 0.04,
+          "top_geo": "ES"
+        },
+        {
+          "sub_id": "sub_102",
+          "clicks": 268,
+          "bot_score": 0.07,
+          "top_geo": "ES"
+        },
+        {
+          "sub_id": "sub_103",
+          "clicks": 179,
+          "bot_score": 0.05,
+          "top_geo": "ES"
+        }
+      ],
+      "geo_share": {
+        "ES": 0.97,
+        "PT": 0.03
       }
     }
   }

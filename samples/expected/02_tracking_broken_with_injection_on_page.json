@@ -11,6 +11,7 @@
   "reasons": [
     "Landing page is up but the tracking pixel is missing from the page."
   ],
+  "other_findings": [],
   "recommended_actions": [
     "Tracking team: restore the conversion pixel or postback on the landing page.",
     "Check the last landing page deploy for removed tracking code.",

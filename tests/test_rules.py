@@ -80,6 +80,30 @@ def test_model_disagreement_is_flagged_but_rules_win():
     assert verdict.needs_human_review and verdict.confidence == 0.7
 
 
+SLOW_PAGE = {**PAGE, "slow": True, "latency_ms": 15000}
+
+
+def test_slow_page_keeps_checking_and_reports_the_second_cause():
+    assert rules.next_needed({"kpi_snapshot": KPI, "landing_page_check": SLOW_PAGE}, SETTINGS) == "offer_status"
+    verdict = rules.evaluate(full(landing_page_check=SLOW_PAGE, offer_status={**OFFER, "cap_reached": True}), SETTINGS)
+    assert verdict.root_cause is RootCause.landing_page_down and verdict.severity is Severity.critical
+    assert len(verdict.other_findings) == 1 and verdict.other_findings[0].startswith("offer_cap_reached: ")
+    assert verdict.confidence == 0.9 and not verdict.needs_human_review
+
+
+def test_dead_page_still_stops_at_once_with_no_other_findings():
+    evidence = {"kpi_snapshot": KPI, "landing_page_check": {**PAGE, "status_code": 503, "reachable": False}}
+    assert rules.next_needed(evidence, SETTINGS) is None
+    assert rules.evaluate(evidence, SETTINGS).other_findings == []
+
+
+def test_slow_page_cut_short_by_the_budget_is_kept_but_sent_for_review():
+    verdict = rules.evaluate({"kpi_snapshot": KPI, "landing_page_check": SLOW_PAGE}, SETTINGS)
+    assert verdict.root_cause is RootCause.landing_page_down
+    assert verdict.needs_human_review and verdict.confidence == 0.7
+    assert "Investigation stopped before 'offer_status' could run." in verdict.reasons
+
+
 def test_incomplete_evidence_never_produces_a_guess():
     verdict = rules.evaluate({"kpi_snapshot": KPI}, SETTINGS)
     assert verdict.root_cause is RootCause.unknown and verdict.needs_human_review

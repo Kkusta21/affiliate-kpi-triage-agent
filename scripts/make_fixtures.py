@@ -155,6 +155,16 @@ add(campaign("CMP-108", "Streaming trial SE", "OFF-18", "AFF-208", "Nordic Reach
     {"permanent_error": "tracker API returned 502 Bad Gateway"},
     clean_traffic(1143, "SE") | {"geo_share": {"SE": 0.9, "NO": 0.1}})
 
+# 9. Two problems at once: the page is up but very slow, AND the offer hit its daily cap.
+#    The slow page is the primary cause (higher priority), the cap is reported as an other finding.
+add(campaign("CMP-109", "Solar panel quote ES", "OFF-19", "AFF-209", "Iberia Leads", "omar",
+             "https://lp.example-offers.test/solar-es", 20.0),
+    offer("OFF-19", 20.0, ["ES"], cap=200, today=200),
+    hourly(300, 0.050, 20.0, [(298, 4), (301, 1), (296, 0)]),
+    [{"status_code": 200, "latency_ms": 14500, "title": "Solar panel quote", "has_tracking_pixel": True}],
+    healthy_tracking(895, 5),
+    clean_traffic(895, "ES") | {"geo_share": {"ES": 0.97, "PT": 0.03}})
+
 OUT.parent.mkdir(exist_ok=True)
 OUT.write_text(json.dumps(world, indent=2) + "\n")
 print(f"wrote {OUT}")

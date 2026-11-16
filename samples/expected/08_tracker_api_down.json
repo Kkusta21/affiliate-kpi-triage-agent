@@ -12,6 +12,7 @@
     "The drop is real but landing page, offer, tracking and traffic checks found no cause.",
     "Checks unavailable during this run: tracking_check."
   ],
+  "other_findings": [],
   "recommended_actions": [
     "Affiliate manager: review the evidence manually, automated checks found no cause.",
     "Check with the advertiser for changes on their side (creative, price, checkout)."

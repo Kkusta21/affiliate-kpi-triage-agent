@@ -45,6 +45,12 @@ class IncidentStore:
                    created_at TEXT NOT NULL,
                    updated_at TEXT NOT NULL)"""
         )
+        # At most one OPEN incident per campaign and root cause, enforced by the database, so two
+        # workers that triage the same problem at the same time cannot both create one.
+        self._conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS one_open_incident_per_cause"
+            " ON incidents (campaign_id, root_cause) WHERE status = 'open'"
+        )
         self._conn.commit()
 
     @staticmethod
@@ -54,12 +60,17 @@ class IncidentStore:
         return data
 
     def create(self, campaign_id: str, root_cause: str, severity: str, summary: str, alert_id: str) -> dict[str, Any]:
+        """Raises sqlite3.IntegrityError if an open incident for the same campaign and cause exists."""
         now = self._clock()
-        cur = self._conn.execute(
-            "INSERT INTO incidents (campaign_id, root_cause, severity, summary, last_alert_id, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (campaign_id, root_cause, severity, summary, alert_id, now, now),
-        )
+        try:
+            cur = self._conn.execute(
+                "INSERT INTO incidents (campaign_id, root_cause, severity, summary, last_alert_id, created_at,"
+                " updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (campaign_id, root_cause, severity, summary, alert_id, now, now),
+            )
+        except sqlite3.IntegrityError:
+            self._conn.rollback()
+            raise
         self._conn.commit()
         return self.get(f"INC-{cur.lastrowid:04d}")  # type: ignore[return-value]
 
@@ -98,13 +109,27 @@ class IncidentStore:
 
 
 def upsert_incident(store: IncidentStore, campaign_id: str, alert_id: str, verdict: Verdict) -> IncidentRef:
-    """Create an incident, or bump the open one so repeated alerts do not spam the queue."""
-    existing = store.find_open(campaign_id, verdict.root_cause.value)
-    if existing:
+    """Create an incident, or bump the open one so repeated alerts do not spam the queue.
+
+    Check-then-insert is racy across workers. The unique index closes the race: the loser of
+    a concurrent insert gets an IntegrityError and records a repeat on the winner's incident.
+    """
+    cause = verdict.root_cause.value
+
+    def bump(existing: dict[str, Any]) -> IncidentRef:
         updated = store.record_repeat(existing["incident_id"], verdict.severity.value, alert_id)
         return IncidentRef(action="updated", incident_id=updated["incident_id"], occurrences=updated["occurrences"])
-    created = store.create(campaign_id, verdict.root_cause.value, verdict.severity.value,
-                           " ".join(verdict.reasons), alert_id)
+
+    existing = store.find_open(campaign_id, cause)
+    if existing:
+        return bump(existing)
+    try:
+        created = store.create(campaign_id, cause, verdict.severity.value, " ".join(verdict.reasons), alert_id)
+    except sqlite3.IntegrityError:
+        existing = store.find_open(campaign_id, cause)
+        if existing is None:  # not the duplicate case, so do not hide it
+            raise
+        return bump(existing)
     return IncidentRef(action="created", incident_id=created["incident_id"], occurrences=1)
 
 
@@ -123,6 +148,7 @@ def draft_alert(campaign: dict[str, Any], kpi: dict[str, Any], verdict: Verdict,
                             if verdict.est_revenue_loss_per_hour_usd > 0
                             else "No direct revenue loss measured in this window."),
         "Why: " + " ".join(verdict.reasons),
+        *[f"Also found: {finding}" for finding in verdict.other_findings],
         "Suggested next steps:",
         *[f"  {i}. {action}" for i, action in enumerate(verdict.recommended_actions, 1)],
     ]

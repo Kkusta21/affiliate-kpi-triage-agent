@@ -9,6 +9,7 @@
   "confidence": null,
   "needs_human_review": false,
   "reasons": [],
+  "other_findings": [],
   "recommended_actions": [],
   "est_revenue_loss_per_hour_usd": 0.0,
   "llm_hypothesis": null,

@@ -167,7 +167,8 @@ def runbook_search(ctx: ToolContext) -> dict[str, Any]:
     scored.sort(key=lambda item: (-item[0], item[1], item[2]))
     hits = []
     for score, source, heading, body in scored[:2]:
-        snippet, flagged = sanitize_untrusted(body, max_len=320)
-        hits.append({"source": source, "heading": heading, "snippet": snippet, "score": score,
-                     "untrusted_text_flagged": flagged})
+        safe_heading, heading_flagged = sanitize_untrusted(heading, max_len=80)
+        snippet, snippet_flagged = sanitize_untrusted(body, max_len=320)
+        hits.append({"source": source, "heading": safe_heading, "snippet": snippet, "score": score,
+                     "untrusted_text_flagged": heading_flagged or snippet_flagged})
     return {"query": query, "hits": hits}

@@ -31,6 +31,7 @@ def test_sample_matches_expected_output(name):
     ("04_offer_cap_reached.json", "offer_cap_reached", "affiliate_manager", 4),
     ("05_geo_mismatch.json", "geo_mismatch", "affiliate_manager", 6),
     ("07_unknown_cause_flaky_probe.json", "unknown", "affiliate_manager", 6),
+    ("12_slow_page_and_offer_cap.json", "landing_page_down", "tech_oncall", 4),
 ])
 def test_business_cases(triage, name, cause, owner, steps):
     result = triage(load_alert(name))
@@ -46,6 +47,13 @@ def test_no_anomaly_opens_nothing(triage, store):
     assert result.root_cause.value == "no_anomaly" and result.incident.action == "none"
     assert result.alert_draft is None and store.list() == []
     assert [s.tool for s in result.steps] == ["kpi_snapshot"]
+
+
+def test_two_problems_at_once_reports_both(triage):
+    result = triage(load_alert("12_slow_page_and_offer_cap.json"))
+    assert result.root_cause.value == "landing_page_down"  # first match in priority order
+    assert [f.split(":")[0] for f in result.other_findings] == ["offer_cap_reached"]
+    assert "Also found" in result.summary and "Also found: offer_cap_reached" in result.alert_draft.body
 
 
 def test_flaky_probe_is_retried_with_backoff(triage):

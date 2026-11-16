@@ -11,6 +11,7 @@
   "reasons": [
     "57% of traffic comes from CH, RO, which the offer does not accept."
   ],
+  "other_findings": [],
   "recommended_actions": [
     "Tell the affiliate which countries the offer accepts and ask them to fix targeting.",
     "Consider a geo redirect so disallowed traffic goes to a matching offer."

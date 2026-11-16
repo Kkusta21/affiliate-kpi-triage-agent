@@ -11,6 +11,7 @@
   "reasons": [
     "Only 60 clicks in the window, below the 100 needed to trust a change."
   ],
+  "other_findings": [],
   "recommended_actions": [],
   "est_revenue_loss_per_hour_usd": 0.0,
   "llm_hypothesis": null,

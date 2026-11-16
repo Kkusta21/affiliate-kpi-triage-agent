@@ -12,6 +12,7 @@
     "Landing page returned HTTP 503 in 30012 ms.",
     "Clicks are still arriving, so every visitor hits a broken page."
   ],
+  "other_findings": [],
   "recommended_actions": [
     "Page tech on-call to restore the landing page.",
     "Ask the affiliate to pause or redirect traffic to the backup page until it is back.",

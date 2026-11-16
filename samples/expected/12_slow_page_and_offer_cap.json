@@ -1,0 +1,149 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1012",
+  "campaign_id": "CMP-109",
+  "campaign_name": "Solar panel quote ES",
+  "llm_mode": "offline",
+  "root_cause": "landing_page_down",
+  "severity": "critical",
+  "confidence": 0.9,
+  "needs_human_review": false,
+  "reasons": [
+    "Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit.",
+    "Many visitors leave before the page loads."
+  ],
+  "other_findings": [
+    "offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected."
+  ],
+  "recommended_actions": [
+    "Page tech on-call to restore the landing page.",
+    "Ask the affiliate to pause or redirect traffic to the backup page until it is back.",
+    "Re-run triage once the page returns 200 to confirm conversions recover."
+  ],
+  "est_revenue_loss_per_hour_usd": 266.67,
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "revenue",
+    "baseline": {
+      "clicks_total": 6301,
+      "conversions_total": 315,
+      "clicks_per_hour": 300.0,
+      "conversion_rate": 0.05,
+      "revenue_per_hour_usd": 300.0,
+      "epc_usd": 0.9998
+    },
+    "current": {
+      "clicks_total": 895,
+      "conversions_total": 5,
+      "clicks_per_hour": 298.3,
+      "conversion_rate": 0.0056,
+      "revenue_per_hour_usd": 33.33,
+      "epc_usd": 0.1117
+    },
+    "change_pct": {
+      "clicks": -0.6,
+      "conversion_rate": -88.8,
+      "revenue": -88.9,
+      "epc": -88.8
+    },
+    "metric_change_pct": -88.9,
+    "enough_volume": true,
+    "significant": true,
+    "est_revenue_loss_per_hour_usd": 266.67
+  },
+  "evidence": {
+    "landing_page_check": {
+      "url": "https://lp.example-offers.test/solar-es",
+      "status_code": 200,
+      "reachable": true,
+      "latency_ms": 14500,
+      "slow": true,
+      "has_tracking_pixel": true,
+      "title": "Solar panel quote",
+      "untrusted_text_flagged": false
+    },
+    "offer_status": {
+      "offer_id": "OFF-19",
+      "status": "active",
+      "daily_cap": 200,
+      "conversions_today": 200,
+      "cap_reached": true,
+      "allowed_geos": [
+        "ES"
+      ]
+    },
+    "runbook_search": {
+      "query": "landing page down outage",
+      "hits": [
+        {
+          "source": "landing_page_down.md",
+          "heading": "Landing page outage",
+          "snippet": "When the landing page returns 5xx or times out while clicks keep arriving, every click is wasted spend for the affiliate. Page tech on-call immediately. Ask the affiliate to pause traffic or switch to the backup landing page. Confirm recovery with a fresh probe before closing the incident.",
+          "score": 17,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "landing_page_down.md",
+          "heading": "Slow landing page",
+          "snippet": "Latency above 10 seconds counts as down for mobile traffic. Check the CDN status and the last deploy. Treat as an outage if it lasts more than 15 minutes.",
+          "score": 13,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "landing_page_down.md#Landing page outage",
+    "landing_page_down.md#Slow landing page"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "tech_oncall",
+    "channel": "pager + #ops-alerts",
+    "subject": "[CRITICAL] CMP-109 Solar panel quote ES: landing page down",
+    "body": "Campaign: CMP-109 Solar panel quote ES (affiliate Iberia Leads, manager omar)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: revenue changed -88.9% vs baseline. Estimated loss $267/hour.\nWhy: Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before the page loads.\nAlso found: offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nSuggested next steps:\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [],
+  "guardrail_flags": [],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "landing_page_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'landing_page_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 3,
+      "tool": "offer_status",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'offer_status' is the next check needed for a verdict."
+    },
+    {
+      "step": 4,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to landing_page_down; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1012 | CMP-109 Solar panel quote ES\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: revenue -88.9% vs baseline (conversion rate 5.00% -> 0.56%, 895 clicks in the last 3h). Estimated loss: $267/hour.\nWhy:\n  - Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit.\n  - Many visitors leave before the page loads.\nAlso found (lower priority, check after the main cause):\n  - offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> runbook_search"
+}

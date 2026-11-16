@@ -11,6 +11,7 @@
   "reasons": [
     "Sub source sub_778 sends 67% of clicks with bot score 0.91."
   ],
+  "other_findings": [],
   "recommended_actions": [
     "Affiliate manager: review the flagged sub source and decide whether to block it.",
     "Hold payout for the flagged source until the review is done.",

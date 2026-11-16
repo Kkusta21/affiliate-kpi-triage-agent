@@ -63,6 +63,7 @@ class Verdict(BaseModel):
     needs_human_review: bool
     reasons: list[str]
     recommended_actions: list[str]
+    other_findings: list[str] = Field(default_factory=list)  # secondary causes, lower in the priority order
     owner_role: str | None = None
     est_revenue_loss_per_hour_usd: float = 0.0
     unavailable_checks: list[str] = Field(default_factory=list)
@@ -106,6 +107,7 @@ class TriageResult(BaseModel):
     confidence: float | None = None
     needs_human_review: bool = False
     reasons: list[str] = Field(default_factory=list)
+    other_findings: list[str] = Field(default_factory=list)
     recommended_actions: list[str] = Field(default_factory=list)
     est_revenue_loss_per_hour_usd: float = 0.0
     llm_hypothesis: str | None = None
