@@ -1,0 +1,130 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1009",
+  "campaign_id": "CMP-101",
+  "campaign_name": "VPN annual plan DE",
+  "llm_mode": "offline",
+  "root_cause": "landing_page_down",
+  "severity": "critical",
+  "confidence": 0.9,
+  "needs_human_review": false,
+  "reasons": [
+    "Landing page returned HTTP 503 in 30012 ms.",
+    "Clicks are still arriving, so every visitor hits a broken page."
+  ],
+  "recommended_actions": [
+    "Page tech on-call to restore the landing page.",
+    "Ask the affiliate to pause or redirect traffic to the backup page until it is back.",
+    "Re-run triage once the page returns 200 to confirm conversions recover."
+  ],
+  "est_revenue_loss_per_hour_usd": 288.0,
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "conversion_rate",
+    "baseline": {
+      "clicks_total": 8821,
+      "conversions_total": 357,
+      "clicks_per_hour": 420.0,
+      "conversion_rate": 0.0405,
+      "revenue_per_hour_usd": 306.0,
+      "epc_usd": 0.7285
+    },
+    "current": {
+      "clicks_total": 1260,
+      "conversions_total": 3,
+      "clicks_per_hour": 420.0,
+      "conversion_rate": 0.0024,
+      "revenue_per_hour_usd": 18.0,
+      "epc_usd": 0.0429
+    },
+    "change_pct": {
+      "clicks": 0.0,
+      "conversion_rate": -94.1,
+      "revenue": -94.1,
+      "epc": -94.1
+    },
+    "metric_change_pct": -94.1,
+    "enough_volume": true,
+    "significant": true,
+    "est_revenue_loss_per_hour_usd": 288.0
+  },
+  "evidence": {
+    "landing_page_check": {
+      "url": "https://lp.example-offers.test/vpn-de",
+      "status_code": 503,
+      "reachable": false,
+      "latency_ms": 30012,
+      "slow": true,
+      "has_tracking_pixel": false,
+      "title": "Service Unavailable",
+      "untrusted_text_flagged": false
+    },
+    "runbook_search": {
+      "query": "landing page down outage",
+      "hits": [
+        {
+          "source": "landing_page_down.md",
+          "heading": "Landing page outage",
+          "snippet": "When the landing page returns 5xx or times out while clicks keep arriving, every click is wasted spend for the affiliate. Page tech on-call immediately. Ask the affiliate to pause traffic or switch to the backup landing page. Confirm recovery with a fresh probe before closing the incident.",
+          "score": 17,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "landing_page_down.md",
+          "heading": "Slow landing page",
+          "snippet": "Latency above 10 seconds counts as down for mobile traffic. Check the CDN status and the last deploy. Treat as an outage if it lasts more than 15 minutes.",
+          "score": 13,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "landing_page_down.md#Landing page outage",
+    "landing_page_down.md#Slow landing page"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "tech_oncall",
+    "channel": "pager + #ops-alerts",
+    "subject": "[CRITICAL] CMP-101 VPN annual plan DE: landing page down",
+    "body": "Campaign: CMP-101 VPN annual plan DE (affiliate NordTraffic, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -94.1% vs baseline. Estimated loss $288/hour.\nWhy: Landing page returned HTTP 503 in 30012 ms. Clicks are still arriving, so every visitor hits a broken page.\nSuggested next steps:\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [],
+  "guardrail_flags": [
+    "prompt_injection_suspected_in_note"
+  ],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "landing_page_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'landing_page_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 3,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to landing_page_down; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1009 | CMP-101 VPN annual plan DE\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: conversion_rate -94.1% vs baseline (conversion rate 4.05% -> 0.24%, 1260 clicks in the last 3h). Estimated loss: $288/hour.\nWhy:\n  - Landing page returned HTTP 503 in 30012 ms.\n  - Clicks are still arriving, so every visitor hits a broken page.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nFlags: prompt_injection_suspected_in_note\nSteps: kpi_snapshot -> landing_page_check -> runbook_search"
+}

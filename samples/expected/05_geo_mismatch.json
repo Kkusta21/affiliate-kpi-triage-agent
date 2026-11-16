@@ -1,0 +1,203 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1005",
+  "campaign_id": "CMP-105",
+  "campaign_name": "Fitness app trial IT",
+  "llm_mode": "offline",
+  "root_cause": "geo_mismatch",
+  "severity": "high",
+  "confidence": 0.9,
+  "needs_human_review": false,
+  "reasons": [
+    "57% of traffic comes from CH, RO, which the offer does not accept."
+  ],
+  "recommended_actions": [
+    "Tell the affiliate which countries the offer accepts and ask them to fix targeting.",
+    "Consider a geo redirect so disallowed traffic goes to a matching offer."
+  ],
+  "est_revenue_loss_per_hour_usd": 98.14,
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "epc",
+    "baseline": {
+      "clicks_total": 7351,
+      "conversions_total": 369,
+      "clicks_per_hour": 350.0,
+      "conversion_rate": 0.0502,
+      "revenue_per_hour_usd": 158.14,
+      "epc_usd": 0.4518
+    },
+    "current": {
+      "clicks_total": 1061,
+      "conversions_total": 20,
+      "clicks_per_hour": 353.7,
+      "conversion_rate": 0.0189,
+      "revenue_per_hour_usd": 60.0,
+      "epc_usd": 0.1697
+    },
+    "change_pct": {
+      "clicks": 1.1,
+      "conversion_rate": -62.4,
+      "revenue": -62.1,
+      "epc": -62.4
+    },
+    "metric_change_pct": -62.4,
+    "enough_volume": true,
+    "significant": true,
+    "est_revenue_loss_per_hour_usd": 98.14
+  },
+  "evidence": {
+    "landing_page_check": {
+      "url": "https://lp.example-offers.test/fitness-it",
+      "status_code": 200,
+      "reachable": true,
+      "latency_ms": 180,
+      "slow": false,
+      "has_tracking_pixel": true,
+      "title": "Fitness app",
+      "untrusted_text_flagged": false
+    },
+    "offer_status": {
+      "offer_id": "OFF-15",
+      "status": "active",
+      "daily_cap": 500,
+      "conversions_today": 120,
+      "cap_reached": false,
+      "allowed_geos": [
+        "IT"
+      ]
+    },
+    "tracking_check": {
+      "clicks_recorded": 1061,
+      "pixel_events": 20,
+      "postbacks_received": 20,
+      "postback_ratio": 1.0,
+      "postback_errors": 0,
+      "minutes_since_last_postback": 4
+    },
+    "traffic_quality": {
+      "sources": [
+        {
+          "sub_id": "sub_301",
+          "clicks": 600,
+          "share": 0.57,
+          "bot_score": 0.08,
+          "top_geo": "RO"
+        },
+        {
+          "sub_id": "sub_101",
+          "clicks": 461,
+          "share": 0.43,
+          "bot_score": 0.05,
+          "top_geo": "IT"
+        }
+      ],
+      "worst_source": {
+        "sub_id": "sub_301",
+        "clicks": 600,
+        "share": 0.57,
+        "bot_score": 0.08,
+        "top_geo": "RO"
+      },
+      "geo_share": {
+        "IT": 0.43,
+        "RO": 0.55,
+        "CH": 0.02
+      },
+      "disallowed_geos": [
+        "CH",
+        "RO"
+      ],
+      "disallowed_geo_share": 0.57
+    },
+    "runbook_search": {
+      "query": "geo mismatch disallowed country",
+      "hits": [
+        {
+          "source": "offer_and_geo.md",
+          "heading": "Geo mismatch and disallowed country traffic",
+          "snippet": "Traffic from a country the offer does not accept will not convert. Send the affiliate the list of allowed countries and ask them to fix targeting. Consider a geo redirect to a matching offer.",
+          "score": 9,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "offer_and_geo.md",
+          "heading": "Offer cap reached",
+          "snippet": "When an offer reaches its daily cap the advertiser rejects further conversions. Tell the affiliate so they can shift traffic, and ask the advertiser for a cap increase if the campaign is profitable.",
+          "score": 3,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "offer_and_geo.md#Geo mismatch and disallowed country traffic",
+    "offer_and_geo.md#Offer cap reached"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "affiliate_manager",
+    "channel": "direct message",
+    "subject": "[HIGH] CMP-105 Fitness app trial IT: geo mismatch",
+    "body": "Campaign: CMP-105 Fitness app trial IT (affiliate MoveMedia, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: epc changed -62.4% vs baseline. Estimated loss $98/hour.\nWhy: 57% of traffic comes from CH, RO, which the offer does not accept.\nSuggested next steps:\n  1. Tell the affiliate which countries the offer accepts and ask them to fix targeting.\n  2. Consider a geo redirect so disallowed traffic goes to a matching offer.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [],
+  "guardrail_flags": [],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "landing_page_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'landing_page_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 3,
+      "tool": "offer_status",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'offer_status' is the next check needed for a verdict."
+    },
+    {
+      "step": 4,
+      "tool": "tracking_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'tracking_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 5,
+      "tool": "traffic_quality",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'traffic_quality' is the next check needed for a verdict."
+    },
+    {
+      "step": 6,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to geo_mismatch; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1005 | CMP-105 Fitness app trial IT\nRoot cause: geo_mismatch | severity: high | confidence: 0.90\nKPI: epc -62.4% vs baseline (conversion rate 5.02% -> 1.89%, 1061 clicks in the last 3h). Estimated loss: $98/hour.\nWhy:\n  - 57% of traffic comes from CH, RO, which the offer does not accept.\nRecommended actions (for a human to carry out):\n  1. Tell the affiliate which countries the offer accepts and ask them to fix targeting.\n  2. Consider a geo redirect so disallowed traffic goes to a matching offer.\nRunbooks: offer_and_geo.md#Geo mismatch and disallowed country traffic, offer_and_geo.md#Offer cap reached\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+}

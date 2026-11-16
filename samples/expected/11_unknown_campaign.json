@@ -1,0 +1,35 @@
+{
+  "status": "rejected",
+  "alert_id": "ALT-1011",
+  "campaign_id": "CMP-999",
+  "campaign_name": null,
+  "llm_mode": "offline",
+  "root_cause": null,
+  "severity": null,
+  "confidence": null,
+  "needs_human_review": false,
+  "reasons": [],
+  "recommended_actions": [],
+  "est_revenue_loss_per_hour_usd": 0.0,
+  "llm_hypothesis": null,
+  "kpi": {},
+  "evidence": {},
+  "runbook_refs": [],
+  "incident": {
+    "action": "none",
+    "incident_id": null,
+    "occurrences": 0
+  },
+  "alert_draft": null,
+  "refused_requests": [],
+  "guardrail_flags": [
+    "unknown_campaign"
+  ],
+  "rejection": {
+    "code": "unknown_campaign",
+    "message": "Campaign CMP-999 does not exist.",
+    "errors": []
+  },
+  "steps": [],
+  "summary": "Triage rejected: Campaign CMP-999 does not exist."
+}

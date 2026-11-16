@@ -1,0 +1,208 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1007",
+  "campaign_id": "CMP-107",
+  "campaign_name": "Credit score app PL",
+  "llm_mode": "offline",
+  "root_cause": "unknown",
+  "severity": "high",
+  "confidence": 0.4,
+  "needs_human_review": true,
+  "reasons": [
+    "The drop is real but landing page, offer, tracking and traffic checks found no cause."
+  ],
+  "recommended_actions": [
+    "Affiliate manager: review the evidence manually, automated checks found no cause.",
+    "Check with the advertiser for changes on their side (creative, price, checkout)."
+  ],
+  "est_revenue_loss_per_hour_usd": 88.0,
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "conversion_rate",
+    "baseline": {
+      "clicks_total": 8401,
+      "conversions_total": 336,
+      "clicks_per_hour": 400.0,
+      "conversion_rate": 0.04,
+      "revenue_per_hour_usd": 192.0,
+      "epc_usd": 0.4799
+    },
+    "current": {
+      "clicks_total": 1205,
+      "conversions_total": 26,
+      "clicks_per_hour": 401.7,
+      "conversion_rate": 0.0216,
+      "revenue_per_hour_usd": 104.0,
+      "epc_usd": 0.2589
+    },
+    "change_pct": {
+      "clicks": 0.4,
+      "conversion_rate": -46.0,
+      "revenue": -45.8,
+      "epc": -46.1
+    },
+    "metric_change_pct": -46.0,
+    "enough_volume": true,
+    "significant": true,
+    "est_revenue_loss_per_hour_usd": 88.0
+  },
+  "evidence": {
+    "landing_page_check": {
+      "url": "https://lp.example-offers.test/credit-pl",
+      "status_code": 200,
+      "reachable": true,
+      "latency_ms": 180,
+      "slow": false,
+      "has_tracking_pixel": true,
+      "title": "Credit score",
+      "untrusted_text_flagged": false
+    },
+    "offer_status": {
+      "offer_id": "OFF-17",
+      "status": "active",
+      "daily_cap": 500,
+      "conversions_today": 120,
+      "cap_reached": false,
+      "allowed_geos": [
+        "PL"
+      ]
+    },
+    "tracking_check": {
+      "clicks_recorded": 1205,
+      "pixel_events": 26,
+      "postbacks_received": 26,
+      "postback_ratio": 1.0,
+      "postback_errors": 0,
+      "minutes_since_last_postback": 4
+    },
+    "traffic_quality": {
+      "sources": [
+        {
+          "sub_id": "sub_101",
+          "clicks": 602,
+          "share": 0.5,
+          "bot_score": 0.04,
+          "top_geo": "PL"
+        },
+        {
+          "sub_id": "sub_102",
+          "clicks": 362,
+          "share": 0.3,
+          "bot_score": 0.07,
+          "top_geo": "PL"
+        },
+        {
+          "sub_id": "sub_103",
+          "clicks": 241,
+          "share": 0.2,
+          "bot_score": 0.05,
+          "top_geo": "PL"
+        }
+      ],
+      "worst_source": {
+        "sub_id": "sub_102",
+        "clicks": 362,
+        "share": 0.3,
+        "bot_score": 0.07,
+        "top_geo": "PL"
+      },
+      "geo_share": {
+        "PL": 0.96,
+        "CZ": 0.04
+      },
+      "disallowed_geos": [
+        "CZ"
+      ],
+      "disallowed_geo_share": 0.04
+    },
+    "runbook_search": {
+      "query": "escalation unknown cause",
+      "hits": [
+        {
+          "source": "escalation.md",
+          "heading": "Unknown cause escalation",
+          "snippet": "If landing page, offer, tracking and traffic checks are all healthy but the drop is real, the affiliate manager reviews manually. Typical hidden causes: advertiser changed price or checkout, creative fatigue, seasonality, a competing promotion.",
+          "score": 6,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "escalation.md",
+          "heading": "Degraded checks",
+          "snippet": "If a check could not run (tool unavailable), the triage result is not conclusive. Re-run triage when the system is back and do not close the incident on partial evidence.",
+          "score": 3,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "escalation.md#Unknown cause escalation",
+    "escalation.md#Degraded checks"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "affiliate_manager",
+    "channel": "direct message",
+    "subject": "[HIGH] CMP-107 Credit score app PL: unknown",
+    "body": "Campaign: CMP-107 Credit score app PL (affiliate Vistula Performance, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -46.0% vs baseline. Estimated loss $88/hour.\nWhy: The drop is real but landing page, offer, tracking and traffic checks found no cause.\nSuggested next steps:\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nNote: automated triage is not conclusive here, please review the evidence.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [],
+  "guardrail_flags": [],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "landing_page_check",
+      "status": "ok",
+      "attempts": 3,
+      "chosen_by": "offline",
+      "reason": "'landing_page_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 3,
+      "tool": "offer_status",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'offer_status' is the next check needed for a verdict."
+    },
+    {
+      "step": 4,
+      "tool": "tracking_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'tracking_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 5,
+      "tool": "traffic_quality",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'traffic_quality' is the next check needed for a verdict."
+    },
+    {
+      "step": 6,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to unknown; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1007 | CMP-107 Credit score app PL\nRoot cause: unknown | severity: high | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -46.0% vs baseline (conversion rate 4.00% -> 2.16%, 1205 clicks in the last 3h). Estimated loss: $88/hour.\nWhy:\n  - The drop is real but landing page, offer, tracking and traffic checks found no cause.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check x3 -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+}

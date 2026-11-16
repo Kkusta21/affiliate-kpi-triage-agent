@@ -1,0 +1,56 @@
+{
+  "status": "rejected",
+  "alert_id": "1010",
+  "campaign_id": null,
+  "campaign_name": null,
+  "llm_mode": "offline",
+  "root_cause": null,
+  "severity": null,
+  "confidence": null,
+  "needs_human_review": false,
+  "reasons": [],
+  "recommended_actions": [],
+  "est_revenue_loss_per_hour_usd": 0.0,
+  "llm_hypothesis": null,
+  "kpi": {},
+  "evidence": {},
+  "runbook_refs": [],
+  "incident": {
+    "action": "none",
+    "incident_id": null,
+    "occurrences": 0
+  },
+  "alert_draft": null,
+  "refused_requests": [],
+  "guardrail_flags": [
+    "invalid_input"
+  ],
+  "rejection": {
+    "code": "invalid_input",
+    "message": "Alert failed validation.",
+    "errors": [
+      {
+        "field": "alert_id",
+        "problem": "String should match pattern '^ALT-\\d{1,8}$'"
+      },
+      {
+        "field": "campaign_id",
+        "problem": "String should match pattern '^CMP-\\d{1,8}$'"
+      },
+      {
+        "field": "metric",
+        "problem": "Input should be 'conversion_rate', 'revenue', 'epc' or 'clicks'"
+      },
+      {
+        "field": "observed_at",
+        "problem": "Input should be a valid datetime or date, input is too short"
+      },
+      {
+        "field": "extra_field",
+        "problem": "Extra inputs are not permitted"
+      }
+    ]
+  },
+  "steps": [],
+  "summary": "Triage rejected: Alert failed validation.\n  - alert_id: String should match pattern '^ALT-\\d{1,8}$'\n  - campaign_id: String should match pattern '^CMP-\\d{1,8}$'\n  - metric: Input should be 'conversion_rate', 'revenue', 'epc' or 'clicks'\n  - observed_at: Input should be a valid datetime or date, input is too short\n  - extra_field: Extra inputs are not permitted"
+}

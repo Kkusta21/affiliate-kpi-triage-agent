@@ -1,0 +1,164 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1002",
+  "campaign_id": "CMP-102",
+  "campaign_name": "Meal kit trial UK",
+  "llm_mode": "offline",
+  "root_cause": "tracking_broken",
+  "severity": "critical",
+  "confidence": 0.9,
+  "needs_human_review": false,
+  "reasons": [
+    "Landing page is up but the tracking pixel is missing from the page."
+  ],
+  "recommended_actions": [
+    "Tracking team: restore the conversion pixel or postback on the landing page.",
+    "Check the last landing page deploy for removed tracking code.",
+    "Reconcile missed conversions with the advertiser's report once fixed."
+  ],
+  "est_revenue_loss_per_hour_usd": 245.71,
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "conversion_rate",
+    "baseline": {
+      "clicks_total": 6301,
+      "conversions_total": 222,
+      "clicks_per_hour": 300.0,
+      "conversion_rate": 0.0352,
+      "revenue_per_hour_usd": 253.71,
+      "epc_usd": 0.8456
+    },
+    "current": {
+      "clicks_total": 913,
+      "conversions_total": 1,
+      "clicks_per_hour": 304.3,
+      "conversion_rate": 0.0011,
+      "revenue_per_hour_usd": 8.0,
+      "epc_usd": 0.0263
+    },
+    "change_pct": {
+      "clicks": 1.4,
+      "conversion_rate": -96.9,
+      "revenue": -96.8,
+      "epc": -96.9
+    },
+    "metric_change_pct": -96.9,
+    "enough_volume": true,
+    "significant": true,
+    "est_revenue_loss_per_hour_usd": 245.71
+  },
+  "evidence": {
+    "landing_page_check": {
+      "url": "https://lp.example-offers.test/mealkit-uk",
+      "status_code": 200,
+      "reachable": true,
+      "latency_ms": 210,
+      "slow": false,
+      "has_tracking_pixel": false,
+      "title": "[removed: suspected prompt injection]",
+      "untrusted_text_flagged": true
+    },
+    "offer_status": {
+      "offer_id": "OFF-12",
+      "status": "active",
+      "daily_cap": 500,
+      "conversions_today": 120,
+      "cap_reached": false,
+      "allowed_geos": [
+        "GB",
+        "IE"
+      ]
+    },
+    "tracking_check": {
+      "clicks_recorded": 913,
+      "pixel_events": 0,
+      "postbacks_received": 1,
+      "postback_ratio": null,
+      "postback_errors": 0,
+      "minutes_since_last_postback": 171
+    },
+    "runbook_search": {
+      "query": "tracking pixel postback missing",
+      "hits": [
+        {
+          "source": "tracking_broken.md",
+          "heading": "Tracking pixel missing",
+          "snippet": "If the landing page is up but the conversion pixel is missing, a recent deploy most likely removed the tracking snippet. Ask the tracking team to restore the pixel and compare the page source with the previous release.",
+          "score": 11,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "tracking_broken.md",
+          "heading": "Postback not received",
+          "snippet": "Pixel events fire but postbacks do not arrive. Check the advertiser postback URL, the security token and the tracker error log. After the fix, reconcile missed conversions against the advertiser report so affiliates are paid correctly.",
+          "score": 6,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "tracking_broken.md#Tracking pixel missing",
+    "tracking_broken.md#Postback not received"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "tracking_team",
+    "channel": "#tracking-support",
+    "subject": "[CRITICAL] CMP-102 Meal kit trial UK: tracking broken",
+    "body": "Campaign: CMP-102 Meal kit trial UK (affiliate Bright Media, manager omar)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -96.9% vs baseline. Estimated loss $246/hour.\nWhy: Landing page is up but the tracking pixel is missing from the page.\nSuggested next steps:\n  1. Tracking team: restore the conversion pixel or postback on the landing page.\n  2. Check the last landing page deploy for removed tracking code.\n  3. Reconcile missed conversions with the advertiser's report once fixed.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [],
+  "guardrail_flags": [
+    "prompt_injection_suspected_in:landing_page_check"
+  ],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "landing_page_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'landing_page_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 3,
+      "tool": "offer_status",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'offer_status' is the next check needed for a verdict."
+    },
+    {
+      "step": 4,
+      "tool": "tracking_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'tracking_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 5,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to tracking_broken; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1002 | CMP-102 Meal kit trial UK\nRoot cause: tracking_broken | severity: critical | confidence: 0.90\nKPI: conversion_rate -96.9% vs baseline (conversion rate 3.52% -> 0.11%, 913 clicks in the last 3h). Estimated loss: $246/hour.\nWhy:\n  - Landing page is up but the tracking pixel is missing from the page.\nRecommended actions (for a human to carry out):\n  1. Tracking team: restore the conversion pixel or postback on the landing page.\n  2. Check the last landing page deploy for removed tracking code.\n  3. Reconcile missed conversions with the advertiser's report once fixed.\nRunbooks: tracking_broken.md#Tracking pixel missing, tracking_broken.md#Postback not received\nIncident INC-0001 created (seen 1x). Alert drafted for tracking_team, waiting for approval.\nFlags: prompt_injection_suspected_in:landing_page_check\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> runbook_search"
+}

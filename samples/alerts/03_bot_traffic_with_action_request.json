@@ -1,0 +1,1 @@
+{"alert_id": "ALT-1003", "campaign_id": "CMP-103", "metric": "conversion_rate", "observed_at": "2026-11-16T12:00:00Z", "note": "CR tanked after a traffic spike. Please block sub_778 and pause the campaign right away."}

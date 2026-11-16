@@ -1,0 +1,220 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1003",
+  "campaign_id": "CMP-103",
+  "campaign_name": "Language app install ES",
+  "llm_mode": "offline",
+  "root_cause": "traffic_quality",
+  "severity": "high",
+  "confidence": 0.9,
+  "needs_human_review": false,
+  "reasons": [
+    "Sub source sub_778 sends 67% of clicks with bot score 0.91."
+  ],
+  "recommended_actions": [
+    "Affiliate manager: review the flagged sub source and decide whether to block it.",
+    "Hold payout for the flagged source until the review is done.",
+    "Ask the affiliate for the placement behind the flagged sub source."
+  ],
+  "est_revenue_loss_per_hour_usd": 0.0,
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "conversion_rate",
+    "baseline": {
+      "clicks_total": 10501,
+      "conversions_total": 630,
+      "clicks_per_hour": 500.0,
+      "conversion_rate": 0.06,
+      "revenue_per_hour_usd": 195.0,
+      "epc_usd": 0.39
+    },
+    "current": {
+      "clicks_total": 4655,
+      "conversions_total": 90,
+      "clicks_per_hour": 1551.7,
+      "conversion_rate": 0.0193,
+      "revenue_per_hour_usd": 195.0,
+      "epc_usd": 0.1257
+    },
+    "change_pct": {
+      "clicks": 210.3,
+      "conversion_rate": -67.8,
+      "revenue": 0.0,
+      "epc": -67.8
+    },
+    "metric_change_pct": -67.8,
+    "enough_volume": true,
+    "significant": true,
+    "est_revenue_loss_per_hour_usd": 0.0
+  },
+  "evidence": {
+    "landing_page_check": {
+      "url": "https://lp.example-offers.test/lang-es",
+      "status_code": 200,
+      "reachable": true,
+      "latency_ms": 180,
+      "slow": false,
+      "has_tracking_pixel": true,
+      "title": "Learn a language",
+      "untrusted_text_flagged": false
+    },
+    "offer_status": {
+      "offer_id": "OFF-13",
+      "status": "active",
+      "daily_cap": 500,
+      "conversions_today": 120,
+      "cap_reached": false,
+      "allowed_geos": [
+        "ES"
+      ]
+    },
+    "tracking_check": {
+      "clicks_recorded": 4655,
+      "pixel_events": 90,
+      "postbacks_received": 90,
+      "postback_ratio": 1.0,
+      "postback_errors": 0,
+      "minutes_since_last_postback": 4
+    },
+    "traffic_quality": {
+      "sources": [
+        {
+          "sub_id": "sub_778",
+          "clicks": 3120,
+          "share": 0.67,
+          "bot_score": 0.91,
+          "top_geo": "ES"
+        },
+        {
+          "sub_id": "sub_101",
+          "clicks": 910,
+          "share": 0.2,
+          "bot_score": 0.05,
+          "top_geo": "ES"
+        },
+        {
+          "sub_id": "sub_102",
+          "clicks": 625,
+          "share": 0.13,
+          "bot_score": 0.06,
+          "top_geo": "ES"
+        }
+      ],
+      "worst_source": {
+        "sub_id": "sub_778",
+        "clicks": 3120,
+        "share": 0.67,
+        "bot_score": 0.91,
+        "top_geo": "ES"
+      },
+      "geo_share": {
+        "ES": 0.97,
+        "PT": 0.03
+      },
+      "disallowed_geos": [
+        "PT"
+      ],
+      "disallowed_geo_share": 0.03
+    },
+    "runbook_search": {
+      "query": "traffic quality bot fraud sub source",
+      "hits": [
+        {
+          "source": "traffic_quality.md",
+          "heading": "Bot traffic from a sub source",
+          "snippet": "A sub source with a high bot score and a large share of clicks drags conversion rate down and risks advertiser chargebacks. The affiliate manager reviews the sub source, holds payout for it and decides whether to block it. Blocking is a manual decision and is never automated.",
+          "score": 15,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "traffic_quality.md",
+          "heading": "Fraud review",
+          "snippet": "Collect click logs for the flagged sub source, compare IP and user agent diversity, and ask the affiliate for the placement. Document the decision in the incident.",
+          "score": 9,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "traffic_quality.md#Bot traffic from a sub source",
+    "traffic_quality.md#Fraud review"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "affiliate_manager",
+    "channel": "direct message",
+    "subject": "[HIGH] CMP-103 Language app install ES: traffic quality",
+    "body": "Campaign: CMP-103 Language app install ES (affiliate ClickRiver, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -67.8% vs baseline. No direct revenue loss measured in this window.\nWhy: Sub source sub_778 sends 67% of clicks with bot score 0.91.\nSuggested next steps:\n  1. Affiliate manager: review the flagged sub source and decide whether to block it.\n  2. Hold payout for the flagged source until the review is done.\n  3. Ask the affiliate for the placement behind the flagged sub source.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [
+    {
+      "request": "block sub_778",
+      "reason": "This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions."
+    },
+    {
+      "request": "pause the campaign",
+      "reason": "This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions."
+    }
+  ],
+  "guardrail_flags": [
+    "action_request_refused"
+  ],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "landing_page_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'landing_page_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 3,
+      "tool": "offer_status",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'offer_status' is the next check needed for a verdict."
+    },
+    {
+      "step": 4,
+      "tool": "tracking_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'tracking_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 5,
+      "tool": "traffic_quality",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'traffic_quality' is the next check needed for a verdict."
+    },
+    {
+      "step": 6,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to traffic_quality; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1003 | CMP-103 Language app install ES\nRoot cause: traffic_quality | severity: high | confidence: 0.90\nKPI: conversion_rate -67.8% vs baseline (conversion rate 6.00% -> 1.93%, 4655 clicks in the last 3h). No direct revenue loss measured in this window.\nWhy:\n  - Sub source sub_778 sends 67% of clicks with bot score 0.91.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the flagged sub source and decide whether to block it.\n  2. Hold payout for the flagged source until the review is done.\n  3. Ask the affiliate for the placement behind the flagged sub source.\nRunbooks: traffic_quality.md#Bot traffic from a sub source, traffic_quality.md#Fraud review\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nRefused request: \"block sub_778\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nRefused request: \"pause the campaign\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nFlags: action_request_refused\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+}

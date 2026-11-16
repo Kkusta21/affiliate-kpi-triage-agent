@@ -1,0 +1,206 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1008",
+  "campaign_id": "CMP-108",
+  "campaign_name": "Streaming trial SE",
+  "llm_mode": "offline",
+  "root_cause": "unknown",
+  "severity": "high",
+  "confidence": 0.4,
+  "needs_human_review": true,
+  "reasons": [
+    "The drop is real but landing page, offer, tracking and traffic checks found no cause.",
+    "Checks unavailable during this run: tracking_check."
+  ],
+  "recommended_actions": [
+    "Affiliate manager: review the evidence manually, automated checks found no cause.",
+    "Check with the advertiser for changes on their side (creative, price, checkout)."
+  ],
+  "est_revenue_loss_per_hour_usd": 170.0,
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "conversion_rate",
+    "baseline": {
+      "clicks_total": 7981,
+      "conversions_total": 357,
+      "clicks_per_hour": 380.0,
+      "conversion_rate": 0.0447,
+      "revenue_per_hour_usd": 255.0,
+      "epc_usd": 0.671
+    },
+    "current": {
+      "clicks_total": 1143,
+      "conversions_total": 17,
+      "clicks_per_hour": 381.0,
+      "conversion_rate": 0.0149,
+      "revenue_per_hour_usd": 85.0,
+      "epc_usd": 0.2231
+    },
+    "change_pct": {
+      "clicks": 0.3,
+      "conversion_rate": -66.7,
+      "revenue": -66.7,
+      "epc": -66.8
+    },
+    "metric_change_pct": -66.7,
+    "enough_volume": true,
+    "significant": true,
+    "est_revenue_loss_per_hour_usd": 170.0
+  },
+  "evidence": {
+    "landing_page_check": {
+      "url": "https://lp.example-offers.test/stream-se",
+      "status_code": 200,
+      "reachable": true,
+      "latency_ms": 180,
+      "slow": false,
+      "has_tracking_pixel": true,
+      "title": "Streaming trial",
+      "untrusted_text_flagged": false
+    },
+    "offer_status": {
+      "offer_id": "OFF-18",
+      "status": "active",
+      "daily_cap": 500,
+      "conversions_today": 120,
+      "cap_reached": false,
+      "allowed_geos": [
+        "SE",
+        "NO"
+      ]
+    },
+    "tracking_check": {
+      "error": "tracker API returned 502 Bad Gateway",
+      "retryable": true
+    },
+    "traffic_quality": {
+      "sources": [
+        {
+          "sub_id": "sub_101",
+          "clicks": 572,
+          "share": 0.5,
+          "bot_score": 0.04,
+          "top_geo": "SE"
+        },
+        {
+          "sub_id": "sub_102",
+          "clicks": 343,
+          "share": 0.3,
+          "bot_score": 0.07,
+          "top_geo": "SE"
+        },
+        {
+          "sub_id": "sub_103",
+          "clicks": 228,
+          "share": 0.2,
+          "bot_score": 0.05,
+          "top_geo": "SE"
+        }
+      ],
+      "worst_source": {
+        "sub_id": "sub_102",
+        "clicks": 343,
+        "share": 0.3,
+        "bot_score": 0.07,
+        "top_geo": "SE"
+      },
+      "geo_share": {
+        "SE": 0.9,
+        "NO": 0.1
+      },
+      "disallowed_geos": [],
+      "disallowed_geo_share": 0
+    },
+    "runbook_search": {
+      "query": "escalation unknown cause",
+      "hits": [
+        {
+          "source": "escalation.md",
+          "heading": "Unknown cause escalation",
+          "snippet": "If landing page, offer, tracking and traffic checks are all healthy but the drop is real, the affiliate manager reviews manually. Typical hidden causes: advertiser changed price or checkout, creative fatigue, seasonality, a competing promotion.",
+          "score": 6,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "escalation.md",
+          "heading": "Degraded checks",
+          "snippet": "If a check could not run (tool unavailable), the triage result is not conclusive. Re-run triage when the system is back and do not close the incident on partial evidence.",
+          "score": 3,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "escalation.md#Unknown cause escalation",
+    "escalation.md#Degraded checks"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "affiliate_manager",
+    "channel": "direct message",
+    "subject": "[HIGH] CMP-108 Streaming trial SE: unknown",
+    "body": "Campaign: CMP-108 Streaming trial SE (affiliate Nordic Reach, manager omar)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -66.7% vs baseline. Estimated loss $170/hour.\nWhy: The drop is real but landing page, offer, tracking and traffic checks found no cause. Checks unavailable during this run: tracking_check.\nSuggested next steps:\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nNote: automated triage is not conclusive here, please review the evidence.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [],
+  "guardrail_flags": [
+    "tool_failed:tracking_check"
+  ],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "landing_page_check",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'landing_page_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 3,
+      "tool": "offer_status",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'offer_status' is the next check needed for a verdict."
+    },
+    {
+      "step": 4,
+      "tool": "tracking_check",
+      "status": "failed",
+      "attempts": 3,
+      "chosen_by": "offline",
+      "reason": "'tracking_check' is the next check needed for a verdict."
+    },
+    {
+      "step": 5,
+      "tool": "traffic_quality",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'traffic_quality' is the next check needed for a verdict."
+    },
+    {
+      "step": 6,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to unknown; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1008 | CMP-108 Streaming trial SE\nRoot cause: unknown | severity: high | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -66.7% vs baseline (conversion rate 4.47% -> 1.49%, 1143 clicks in the last 3h). Estimated loss: $170/hour.\nWhy:\n  - The drop is real but landing page, offer, tracking and traffic checks found no cause.\n  - Checks unavailable during this run: tracking_check.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nFlags: tool_failed:tracking_check\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check (failed) x3 -> traffic_quality -> runbook_search"
+}
