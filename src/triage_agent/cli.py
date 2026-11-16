@@ -28,7 +28,7 @@ def _load(path: Path):
         return f"<unparseable JSON: {exc}>"
 
 
-def _run_one(path: Path, llm_spec: str | None, as_json: bool, verbose: bool) -> int:
+def _run_one(path: Path, llm_spec: str | None, as_json: bool) -> int:
     tracer = Tracer(SETTINGS.runs_dir)
     result = run_triage(_load(path), llm=make_llm(llm_spec), tracer=tracer)
     if as_json:
@@ -60,12 +60,12 @@ def main(argv: list[str] | None = None) -> int:
         logging.basicConfig(level=logging.INFO, stream=sys.stderr, format="%(message)s")
 
     if args.command == "run":
-        return _run_one(args.alert, args.llm, args.json, args.verbose)
+        return _run_one(args.alert, args.llm, args.json)
     if args.command == "demo":
         code = 0
         for path in sorted((REPO_ROOT / "samples" / "alerts").glob("*.json")):
             print(f"\n{'=' * 78}\n{path.name}\n{'=' * 78}")
-            code |= _run_one(path, args.llm, False, args.verbose)
+            code |= _run_one(path, args.llm, False)
         return code
     if args.command == "incidents":
         print(json.dumps(IncidentStore(SETTINGS.db_path).list(), indent=2))

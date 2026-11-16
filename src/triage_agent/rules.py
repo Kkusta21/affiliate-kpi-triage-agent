@@ -176,7 +176,8 @@ def _severity(cause: RootCause, loss: float, s: Settings) -> Severity:
 
 
 def evaluate(evidence: dict[str, Any], settings: Settings, llm_hypothesis: str | None = None) -> Verdict:
-    """Final verdict. Call only when `next_needed` returns None."""
+    """Final verdict. Normally called once `next_needed` returns None. If the step budget
+    ran out before that, the verdict is `unknown` and goes to a human."""
     cause, reasons, missing = _find_cause(evidence, settings)
     if cause is None:
         # Budget ran out before the checks were complete: never guess.

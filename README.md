@@ -104,7 +104,7 @@ Requires Python 3.10 or newer.
 
 ```bash
 git clone <repo-url> && cd affiliate-kpi-triage-agent
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
@@ -115,6 +115,8 @@ pip install -e ".[llm]"
 export OPENAI_API_KEY=...            # or ANTHROPIC_API_KEY
 export TRIAGE_LLM=openai:gpt-4o-mini # any "<provider>:<model>" that LangChain's init_chat_model accepts
 ```
+
+No temperature is sent by default, because some current models reject the parameter. Set `TRIAGE_LLM_TEMPERATURE=0` if your model accepts it.
 
 `TRIAGE_LLM=offline` (the default) uses `OfflineLLM`, a deterministic policy that stands in for the planner. It is not a language model. It exists so reviewers, tests and CI can run the whole workflow with no key and get identical results every time.
 
@@ -138,14 +140,14 @@ Incidents are stored in `var/incidents.db` and traces in `runs/`. Delete `var/` 
 pytest
 ```
 
-74 tests, under 2 seconds, no network and no API key.
+78 tests, a few seconds, no network and no API key.
 
 | File | What it proves |
 |---|---|
 | `tests/test_guardrails.py` | Validation errors per field, injection detection, sanitiser, refusal of mutating requests |
 | `tests/test_rules.py` | Every root cause, priority order, low-volume noise, degraded checks, model disagreement, "never guess on incomplete evidence" |
 | `tests/test_tools.py` | Each tool on fixture data, flaky probe, URL allowlist, runbook ranking, injection inside a runbook, incident CRUD and de-duplication |
-| `tests/test_llm_planner.py` | The real-model code path with scripted fake models: happy path, garbage output, provider exception, tool outside the allowlist, early stop, a model that argues for the wrong verdict, proof that raw untrusted text never reaches the prompt, looping model |
+| `tests/test_llm_planner.py` | The real-model code path with scripted fake models: happy path, garbage output, provider exception, tool outside the allowlist, early stop, a model that argues for the wrong verdict, proof that raw untrusted text never reaches the prompt, looping model, a LangChain chat model that replies in content blocks with fenced JSON, and the two problems found in the live run (rejected `temperature`, undefined hypothesis values) |
 | `tests/test_e2e.py` | Every sample alert through the full graph compared with `samples/expected/`, retries with backoff, tool outage, refusals, both injection routes, rejected input runs zero tools, trace completeness, HTTP API |
 
 **Manual scenarios**
@@ -229,6 +231,33 @@ Trace (`runs/<run_id>.jsonl`, one event per line, shortened):
 {"event": "final", "status": "completed", "incident": "INC-0001", "tool_calls": 6}
 ```
 
+**Live model run**
+
+The same demo with a real model (`TRIAGE_LLM=anthropic:claude-haiku-5-5 python -m triage_agent -v demo`). All 11 samples gave the same root cause, severity and confidence as the offline run, with no planner fallback. Trace of `01_landing_page_down` (shortened, timestamps and run id removed):
+
+```json
+{"event": "run_start", "llm_mode": "anthropic:claude-haiku-5-5", "alert_id": "ALT-1001"}
+{"event": "plan", "action": "kpi_snapshot", "chosen_by": "anthropic:claude-haiku-5-5", "reason": "No evidence collected yet, and the KPI snapshot is always the first step to confirm the drop is significant."}
+{"event": "tool_call", "tool": "kpi_snapshot", "attempt": 1, "ok": true, "result": "{...}"}
+{"event": "plan", "action": "landing_page_check", "chosen_by": "anthropic:claude-haiku-5-5", "reason": "The KPI snapshot is significant, with clicks steady but conversions down 94%, so the cheapest likely cause to rule out first is the landing page."}
+{"event": "tool_call", "tool": "landing_page_check", "attempt": 1, "ok": true, "result": "{\"reachable\": false, \"status_code\": 503, \"latency_ms\": 30012, ...}"}
+{"event": "plan", "action": "runbook_search", "chosen_by": "anthropic:claude-haiku-5-5", "reason": "The landing page returns 503 and times out while clicks stay flat, which plausibly explains the conversion drop, so I'll look up the handling procedure."}
+{"event": "plan", "action": "finish", "chosen_by": "anthropic:claude-haiku-5-5", "reason": "The landing page is returning 503 and is unreachable, which clearly explains the 94% conversion drop, and the runbook search has already returned matching procedures."}
+{"event": "diagnosis", "root_cause": "landing_page_down", "severity": "critical", "confidence": 0.9, "needs_human_review": false, "llm_hypothesis": "landing_page_down"}
+{"event": "final", "status": "completed", "root_cause": "landing_page_down", "incident": "INC-0001", "flags": [], "tool_calls": 3}
+```
+
+The last line of the alert draft comes from the model and is labelled as such:
+
+```
+Analyst note (AI written): Conversion rate fell 94.1% (0.0405 to 0.0024) while clicks held steady at 420 per hour. The verdict is a critical landing page outage: HTTP 503 with a 30-second response time, with an estimated $288 per hour in lost revenue. Tech on-call owns the fix, and triage will re-run once the page returns 200.
+```
+
+The first live run also found two problems that the fake models could not, both fixed in `llm.py` and covered by tests:
+
+- The model rejected the hard-coded `temperature=0` with a 400 error, so every step fell back to the policy. Triage still completed with the right verdicts and the `planner_fallback_used` flag, which is the fallback doing its job. No sampling parameter is sent by default now.
+- The hypothesis prompt listed the allowed values without defining them, so the model named a cause on healthy evidence (samples 06, 07 and 08). The rules still won, but confidence dropped for no good reason. The prompt now defines each value and tells the model to answer `unknown` instead of guessing.
+
 ## 9. Security and reliability notes
 
 **Prompt injection.** Three channels carry outside text: the alert note, the landing page, and the runbooks.
@@ -245,12 +274,12 @@ The pattern filter is a first layer, not a guarantee. The structural limits (no 
 ## 10. Trade-offs and limitations
 
 - **Mocked data.** Tracker, uptime and offer data come from `data/world.json`. The thresholds in `config.py` are reasonable defaults, not tuned on real traffic.
-- **Fixed rule set.** Seven root causes. Anything else lands in `unknown` and goes to a human. That is the safe choice, but the agent does not discover new failure types by itself.
+- **Fixed rule set.** Six named root causes plus `no_anomaly`. Anything else lands in `unknown` and goes to a human. That is the safe choice, but the agent does not discover new failure types by itself.
 - **One cause per alert.** The rules return the first cause in priority order. Two simultaneous problems (page slow and cap reached) are reported as one.
 - **Simple statistics.** Baseline is the mean of the previous 21 hours. No seasonality or day-of-week model.
 - **Keyword runbook search.** Good enough for five documents. A larger knowledge base needs embeddings.
 - **The model has a small job.** By design. With a real model the benefit is adaptive ordering, the cross-check and the note, not the verdict.
-- **Real-model path is tested with scripted fakes.** The tests cover parsing, validation and fallback of the `ChatLLM` path with fake models and a LangChain fake chat model. Run the demo once with your own key to see a live provider.
+- **One live provider tested.** The automated tests cover parsing, validation and fallback of the `ChatLLM` path with scripted fake models and a LangChain fake chat model. The live run in section 8 used one Anthropic model. Other providers go through the same `init_chat_model` call but were not run live.
 - **Regex refusal and injection filters** are English only and can miss creative phrasing.
 
 **Next steps**
@@ -290,5 +319,5 @@ runbooks/             local docs searched by the agent
 samples/alerts/       11 sample inputs
 samples/expected/     expected structured outputs
 scripts/              fixture and expected-output generators
-tests/                74 unit, integration and end-to-end tests
+tests/                78 unit, integration and end-to-end tests
 ```

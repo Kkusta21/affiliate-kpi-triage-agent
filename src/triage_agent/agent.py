@@ -124,8 +124,7 @@ def build_graph(deps: Deps):
             return {"next_tool": None, "flags": _add_flag(state, "step_budget_reached")}
 
         ctx = PlanContext(
-            metric=state["alert"]["metric"], campaign_id=state["campaign"]["id"],
-            campaign_name=state["campaign"]["name"], evidence=evidence,
+            metric=state["alert"]["metric"], campaign_id=state["campaign"]["id"], evidence=evidence,
             remaining_tools=[name for name in INVESTIGATION_TOOLS if name not in evidence],
             safe_note=state.get("safe_note", ""),
         )
