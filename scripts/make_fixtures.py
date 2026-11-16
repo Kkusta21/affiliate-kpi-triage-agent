@@ -3,29 +3,49 @@
 Everything is deterministic (no randomness) so tests and expected outputs are stable.
 In production these fixtures are replaced by real tracker, uptime and offer APIs
 behind the same DataSource interface.
+
+KPI history is hourly and timestamped. Every campaign has 8 days of history ending at
+2026-11-16T12:00Z (a Monday), enough for a weekday seasonal baseline. The weekend-pattern
+campaign has 22 days so that several earlier weekend days exist.
 """
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parents[1] / "data" / "world.json"
+END = datetime(2026, 11, 16, 12, tzinfo=timezone.utc)   # the last hour bucket ends here
 BASELINE_HOURS = 21
 CURRENT_HOURS = 3
+DEFAULT_DAYS = 8
 
 
-def hourly(base_clicks: int, base_cr: float, payout: float, current: list[tuple[int, int]]) -> list[dict]:
-    """21 baseline hours with a small fixed wobble, then the 3 hours under investigation."""
+def hourly(base_clicks: int, base_cr: float, payout: float, current: list[tuple[int, int]] | None = None,
+           days: int = DEFAULT_DAYS, weekend_factor: float = 1.0, drop: set[str] = frozenset()) -> list[dict]:
+    """`days` days of hourly buckets with a small fixed wobble, ending at END.
+
+    `current` replaces the last CURRENT_HOURS buckets (the window under investigation).
+    `weekend_factor` scales clicks and conversion rate on Saturdays and Sundays.
+    `drop` removes buckets by "YYYY-MM-DDTHH" to simulate gaps in the tracker export.
+    """
     rows = []
-    for h in range(BASELINE_HOURS):
-        clicks = base_clicks + ((h * 7) % 11) - 5
-        conversions = round(clicks * base_cr)
-        rows.append({"hour": h, "clicks": clicks, "conversions": conversions,
-                     "revenue_usd": round(conversions * payout, 2)})
-    for i, (clicks, conversions) in enumerate(current):
-        rows.append({"hour": BASELINE_HOURS + i, "clicks": clicks, "conversions": conversions,
-                     "revenue_usd": round(conversions * payout, 2)})
-    return rows
+    total = days * 24
+    for i in range(total):
+        ts = END - timedelta(hours=total - i)
+        position = i % 24                       # position inside a 12:00 to 11:00 block
+        clicks = base_clicks + ((position * 7) % 11) - 5
+        cr = base_cr
+        if ts.weekday() >= 5:
+            clicks = round(clicks * weekend_factor)
+            cr = base_cr * weekend_factor
+        conversions = round(clicks * cr)
+        rows.append({"ts": ts.isoformat().replace("+00:00", "Z"), "hour": ts.hour, "clicks": clicks,
+                     "conversions": conversions, "revenue_usd": round(conversions * payout, 2)})
+    if current:
+        for row, (clicks, conversions) in zip(rows[-len(current):], current):
+            row.update({"clicks": clicks, "conversions": conversions, "revenue_usd": round(conversions * payout, 2)})
+    return [row for row in rows if row["ts"][:13] not in drop]
 
 
 def campaign(cid, name, offer, aff_id, aff_name, manager, url, payout):
@@ -164,6 +184,38 @@ add(campaign("CMP-109", "Solar panel quote ES", "OFF-19", "AFF-209", "Iberia Lea
     [{"status_code": 200, "latency_ms": 14500, "title": "Solar panel quote", "has_tracking_pixel": True}],
     healthy_tracking(895, 5),
     clean_traffic(895, "ES") | {"geo_share": {"ES": 0.97, "PT": 0.03}})
+
+# 10. Weekend pattern: traffic and conversion rate halve every weekend. An alert raised on a
+#     Saturday looks like a drop against the last 21 hours (mostly Friday) but matches the same
+#     hours on earlier weekend days. 22 days of history so several weekend days exist.
+add(campaign("CMP-110", "Office furniture B2B DE", "OFF-20", "AFF-210", "Werktag Media", "dana",
+             "https://lp.example-offers.test/office-de", 35.0),
+    offer("OFF-20", 35.0, ["DE", "AT", "CH"]),
+    hourly(400, 0.030, 35.0, days=22, weekend_factor=0.5),
+    [healthy_page("Office furniture")],
+    healthy_tracking(600, 9),
+    clean_traffic(600))
+
+# 11. Landing page returns 404 after a site restructure. Not a server error, but nobody can convert.
+add(campaign("CMP-111", "Pet insurance UK", "OFF-21", "AFF-211", "Paws Partners", "omar",
+             "https://lp.example-offers.test/pet-uk", 22.0),
+    offer("OFF-21", 22.0, ["GB"]),
+    hourly(330, 0.038, 22.0, [(335, 0), (328, 0), (331, 0)]),
+    [{"status_code": 404, "latency_ms": 95, "title": "Page not found", "has_tracking_pixel": False}],
+    {"clicks_recorded": 994, "pixel_events": 0, "postbacks_received": 0, "postback_errors": 0,
+     "minutes_since_last_postback": 190},
+    clean_traffic(994, "GB") | {"geo_share": {"GB": 0.97, "IE": 0.03}})
+
+# 12. Sparse tracker export: two of the three current hours and several baseline hours are missing.
+#     The agent must say the data is insufficient instead of calling the drop real or noise.
+add(campaign("CMP-112", "Energy switch NL", "OFF-22", "AFF-212", "Delta Leads", "dana",
+             "https://lp.example-offers.test/energy-nl", 28.0),
+    offer("OFF-22", 28.0, ["NL"]),
+    hourly(310, 0.042, 28.0, [(300, 2), (305, 1), (299, 0)],
+           drop={"2026-11-16T10", "2026-11-16T11", "2026-11-15T14", "2026-11-15T15", "2026-11-16T03"}),
+    [healthy_page("Energy switch")],
+    healthy_tracking(300, 2),
+    clean_traffic(300, "NL") | {"geo_share": {"NL": 0.95, "BE": 0.05}})
 
 OUT.parent.mkdir(exist_ok=True)
 OUT.write_text(json.dumps(world, indent=2) + "\n")

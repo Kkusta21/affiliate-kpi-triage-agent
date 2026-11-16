@@ -5,8 +5,11 @@ Tools return numbers and booleans wherever possible. Free text from outside
 """
 from __future__ import annotations
 
+import math
 import re
+from collections import defaultdict
 from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from ..config import Settings
@@ -25,56 +28,194 @@ class ToolContext:
     runbook_query: str | None = None
 
 
-def _pct_change(current: float, baseline: float) -> float:
+# ------------------------------------------------------------------ KPI snapshot
+
+def _pct_change(current: float, baseline: float) -> float | None:
+    """Percent change, or None when there is no baseline to compare with (zero denominator)."""
     if baseline == 0:
-        return 0.0
+        return None
     return round((current - baseline) / baseline * 100, 1)
 
 
-def _window(rows: list[dict[str, Any]]) -> dict[str, float]:
-    hours = max(len(rows), 1)
-    clicks = sum(r["clicks"] for r in rows)
-    conversions = sum(r["conversions"] for r in rows)
-    revenue = sum(r["revenue_usd"] for r in rows)
+def _ts(row: dict[str, Any]) -> datetime:
+    parsed = datetime.fromisoformat(str(row["ts"]).replace("Z", "+00:00"))
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _window(rows: list[dict[str, Any]], hours_expected: int) -> dict[str, Any]:
+    """Per-hour rates over the buckets that exist, so a missing bucket does not read as zero traffic."""
+    hours = len(rows)
+    clicks = sum(int(r.get("clicks", 0)) for r in rows)
+    conversions = sum(int(r.get("conversions", 0)) for r in rows)
+    revenue = float(sum(r.get("revenue_usd", 0.0) for r in rows))
     return {
+        "hours_found": hours,
+        "hours_expected": hours_expected,
         "clicks_total": clicks,
         "conversions_total": conversions,
-        "clicks_per_hour": round(clicks / hours, 1),
+        "clicks_per_hour": round(clicks / hours, 1) if hours else 0.0,
+        "conversions_per_hour": round(conversions / hours, 2) if hours else 0.0,
         "conversion_rate": round(conversions / clicks, 4) if clicks else 0.0,
-        "revenue_per_hour_usd": round(revenue / hours, 2),
+        "revenue_per_hour_usd": round(revenue / hours, 2) if hours else 0.0,
         "epc_usd": round(revenue / clicks, 4) if clicks else 0.0,
     }
 
 
+def _two_proportion_z(c1: int, n1: int, c2: int, n2: int) -> float | None:
+    """z score of conversion rate 2 vs rate 1 (negative = current is lower). None without data."""
+    if n1 <= 0 or n2 <= 0:
+        return None
+    pooled = (c1 + c2) / (n1 + n2)
+    se = math.sqrt(pooled * (1 - pooled) * (1 / n1 + 1 / n2))
+    if se == 0:
+        return None
+    return round((c2 / n2 - c1 / n1) / se, 2)
+
+
+def _select_windows(rows: list[dict[str, Any]], observed_at: datetime, s: Settings
+                    ) -> tuple[list[dict], list[dict], dict[date, list[dict]], bool, str]:
+    """Split history into (current, baseline, seasonal rows by day, timestamped?, day type).
+
+    Timestamped rows are selected by time relative to the alert. The seasonal set holds, for
+    each earlier day of the same type (weekday or weekend), the rows for the same hours of
+    the day as the current window. Rows without timestamps fall back to positional windows.
+    """
+    if not rows or "ts" not in rows[0]:
+        current = rows[-s.current_hours:] if rows else []
+        baseline = rows[-(s.current_hours + s.baseline_hours):-s.current_hours] if len(rows) > s.current_hours else []
+        return current, baseline, {}, False, "unknown"
+
+    end = observed_at if observed_at.tzinfo else observed_at.replace(tzinfo=timezone.utc)
+    end = end.replace(minute=0, second=0, microsecond=0)   # only complete hour buckets count
+    cur_start = end - timedelta(hours=s.current_hours)
+    base_start = cur_start - timedelta(hours=s.baseline_hours)
+    weekend = cur_start.weekday() >= 5
+    hours_of_day = {(cur_start + timedelta(hours=i)).hour for i in range(s.current_hours)}
+
+    current, baseline = [], []
+    seasonal: dict[date, list[dict]] = defaultdict(list)
+    for row in rows:
+        t = _ts(row)
+        if cur_start <= t < end:
+            current.append(row)
+        elif base_start <= t < cur_start:
+            baseline.append(row)
+        if (t.date() < cur_start.date() and t.hour in hours_of_day and (t.weekday() >= 5) == weekend):
+            seasonal[t.date()].append(row)
+    full_days = {day: day_rows for day, day_rows in seasonal.items() if len(day_rows) == s.current_hours}
+    return current, baseline, full_days, True, "weekend_days" if weekend else "weekdays"
+
+
 def kpi_snapshot(ctx: ToolContext) -> dict[str, Any]:
-    """Compare the last hours with the baseline and decide if the drop is a real signal."""
+    """Compare the current window with the rolling baseline and, when history allows, with the
+    same hours on earlier days of the same type. Decide whether the drop is a real signal.
+
+    Every number is explainable: per-hour rates, a percent change, a two-proportion z score
+    for the conversion rate, and explicit data quality counts. No model is involved.
+    """
     s = ctx.settings
     rows = ctx.ds.get_hourly_kpi(ctx.campaign["id"])
-    baseline = _window(rows[: s.baseline_hours])
-    current = _window(rows[s.baseline_hours: s.baseline_hours + s.current_hours])
+    current_rows, baseline_rows, seasonal_days, timestamped, day_type = _select_windows(rows, ctx.alert.observed_at, s)
+    baseline = _window(baseline_rows, s.baseline_hours)
+    current = _window(current_rows, s.current_hours)
+    metric = ctx.alert.metric.value
+
+    data_sufficient = (current["hours_found"] >= s.min_current_hours
+                       and baseline["hours_found"] >= s.min_baseline_hours)
+    data_quality = {
+        "timestamped": timestamped,
+        "history_hours": len(rows),
+        "missing_current_hours": s.current_hours - current["hours_found"],
+        "missing_baseline_hours": s.baseline_hours - baseline["hours_found"],
+    }
+
     change = {
         "clicks": _pct_change(current["clicks_per_hour"], baseline["clicks_per_hour"]),
         "conversion_rate": _pct_change(current["conversion_rate"], baseline["conversion_rate"]),
         "revenue": _pct_change(current["revenue_per_hour_usd"], baseline["revenue_per_hour_usd"]),
         "epc": _pct_change(current["epc_usd"], baseline["epc_usd"]),
     }
-    metric = ctx.alert.metric.value
-    # For a clicks alert the current window is by definition small, so judge volume on the baseline.
-    volume = (baseline["clicks_per_hour"] * s.current_hours if metric == "clicks"
-              else current["clicks_total"])
-    enough_volume = volume >= s.min_clicks_for_signal
     metric_change = change[metric]
+
+    # Volume: for a clicks alert the current window is by definition small, so judge on the baseline.
+    volume = (baseline["clicks_per_hour"] * s.current_hours if metric == "clicks" else current["clicks_total"])
+    enough_volume = volume >= s.min_clicks_for_signal and baseline["clicks_total"] >= s.min_clicks_for_signal
+
+    z = _two_proportion_z(baseline["conversions_total"], baseline["clicks_total"],
+                          current["conversions_total"], current["clicks_total"])
+    rate_metric = metric in ("conversion_rate", "epc")
+    statistically_significant = None if not rate_metric or z is None else bool(z <= -s.z_threshold)
+    if z is not None and rate_metric:
+        strength = "strong" if z <= -3.29 else "moderate" if z <= -s.z_threshold else "weak" if z <= -1.96 else "none"
+    elif metric_change is not None and metric_change <= s.drop_threshold_pct:
+        strength = "strong" if metric_change <= 2 * s.drop_threshold_pct else "moderate"
+    else:
+        strength = "none"
+
+    # Seasonal comparison: the same hours on earlier days of the same type.
+    seasonal: dict[str, Any] = {"available": False, "day_type": day_type, "days_used": len(seasonal_days)}
+    seasonal_explained = False
+    if len(seasonal_days) >= s.seasonal_min_days:
+        season_rows = [row for day_rows in seasonal_days.values() for row in day_rows]
+        season = _window(season_rows, len(season_rows))
+        season_change = {
+            "clicks": _pct_change(current["clicks_per_hour"], season["clicks_per_hour"]),
+            "conversion_rate": _pct_change(current["conversion_rate"], season["conversion_rate"]),
+            "revenue": _pct_change(current["revenue_per_hour_usd"], season["revenue_per_hour_usd"]),
+            "epc": _pct_change(current["epc_usd"], season["epc_usd"]),
+        }
+        seasonal = {
+            "available": True, "day_type": day_type, "days_used": len(seasonal_days),
+            "clicks_per_hour": season["clicks_per_hour"], "conversion_rate": season["conversion_rate"],
+            "revenue_per_hour_usd": season["revenue_per_hour_usd"], "epc_usd": season["epc_usd"],
+            "metric_change_pct": season_change[metric],
+        }
+        rolling_drop = metric_change is not None and metric_change <= s.drop_threshold_pct
+        seasonal_explained = bool(rolling_drop and season_change[metric] is not None
+                                  and season_change[metric] > s.drop_threshold_pct)
+
+    significant = bool(data_sufficient and enough_volume and metric_change is not None
+                       and metric_change <= s.drop_threshold_pct
+                       and statistically_significant is not False and not seasonal_explained)
+    if not significant:
+        strength = "none"   # the strength of a signal that was not accepted would only mislead
+    expected_conversions = baseline["conversions_per_hour"] * current["hours_found"]
     loss = round(max(baseline["revenue_per_hour_usd"] - current["revenue_per_hour_usd"], 0.0), 2)
     return {
         "metric": metric,
+        "observed_at": ctx.alert.observed_at.isoformat(),
         "baseline": baseline,
         "current": current,
         "change_pct": change,
         "metric_change_pct": metric_change,
+        "conversion_z": z,
+        "data_sufficient": data_sufficient,
+        "data_quality": data_quality,
         "enough_volume": enough_volume,
-        "significant": bool(enough_volume and metric_change <= s.drop_threshold_pct),
+        "statistically_significant": statistically_significant,
+        "signal_strength": strength,
+        "significant": significant,
+        "traffic_spike": bool(change["clicks"] is not None and change["clicks"] >= s.spike_threshold_pct),
+        "conversions_stopped": bool(current["conversions_total"] == 0 and expected_conversions >= 5),
+        "seasonal": seasonal,
+        "seasonal_explained": seasonal_explained,
         "est_revenue_loss_per_hour_usd": loss,
     }
+
+
+# ------------------------------------------------------------------ landing page
+
+def classify_status(status: int | None) -> str:
+    """One word per outcome. Only a 2xx counts as a page a visitor can convert on."""
+    if status is None:
+        return "no_response"
+    if 200 <= status < 300:
+        return "ok"
+    if 300 <= status < 400:
+        return "redirect"
+    if 400 <= status < 500:
+        return "client_error"
+    return "server_error"
 
 
 def landing_page_check(ctx: ToolContext) -> dict[str, Any]:
@@ -82,12 +223,14 @@ def landing_page_check(ctx: ToolContext) -> dict[str, Any]:
     url = ctx.campaign["landing_page_url"]
     response = ctx.ds.fetch_landing_page(url)
     status = response.get("status_code")
-    latency = response.get("latency_ms", 0)
+    latency = int(response.get("latency_ms", 0) or 0)
+    outcome = classify_status(status)
     title, flagged = sanitize_untrusted(response.get("title"), max_len=80)
     return {
         "url": url,
         "status_code": status,
-        "reachable": status is not None and status < 500,
+        "outcome": outcome,
+        "reachable": outcome == "ok",
         "latency_ms": latency,
         "slow": latency > ctx.settings.page_latency_limit_ms,
         "has_tracking_pixel": bool(response.get("has_tracking_pixel")),
@@ -96,14 +239,19 @@ def landing_page_check(ctx: ToolContext) -> dict[str, Any]:
     }
 
 
+# ------------------------------------------------------------------ offer, tracking, traffic
+
 def offer_status(ctx: ToolContext) -> dict[str, Any]:
     offer = ctx.ds.get_offer(ctx.campaign["offer_id"])
+    cap = int(offer["daily_cap"])
+    today = int(offer["conversions_today"])
     return {
         "offer_id": offer["id"],
         "status": offer["status"],
-        "daily_cap": offer["daily_cap"],
-        "conversions_today": offer["conversions_today"],
-        "cap_reached": offer["conversions_today"] >= offer["daily_cap"],
+        "daily_cap": cap,
+        "conversions_today": today,
+        "cap_used_share": round(today / cap, 2) if cap else None,
+        "cap_reached": bool(cap) and today >= cap,
         "allowed_geos": offer["allowed_geos"],
     }
 
@@ -111,7 +259,7 @@ def offer_status(ctx: ToolContext) -> dict[str, Any]:
 def tracking_check(ctx: ToolContext) -> dict[str, Any]:
     """Do clicks turn into pixel events, and pixel events into postbacks?"""
     stats = ctx.ds.get_tracking_stats(ctx.campaign["id"])
-    pixel = stats["pixel_events"]
+    pixel = int(stats["pixel_events"])
     ratio = round(stats["postbacks_received"] / pixel, 2) if pixel else None
     return {
         "clicks_recorded": stats["clicks_recorded"],
@@ -143,6 +291,8 @@ def traffic_quality(ctx: ToolContext) -> dict[str, Any]:
         "disallowed_geo_share": round(sum(disallowed.values()), 2),
     }
 
+
+# ------------------------------------------------------------------ runbooks
 
 _WORD_RE = re.compile(r"[a-z0-9]+")
 

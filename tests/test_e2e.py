@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -140,7 +139,7 @@ def test_http_api(tmp_path, monkeypatch):
     ok = client.post("/triage", json=load_alert("01_landing_page_down.json"))
     assert ok.status_code == 200 and ok.json()["root_cause"] == "landing_page_down"
     bad = client.post("/triage", json={"alert_id": "nope"})
-    assert bad.status_code == 200 and bad.json()["status"] == "rejected"
+    assert bad.status_code == 422 and bad.json()["status"] == "rejected"   # was 200 before the API returned proper codes
     assert client.get("/incidents").json()[0]["incident_id"] == "INC-0001"
     assert "01_landing_page_down" in client.get("/samples").json()
     assert "Run triage" in client.get("/").text

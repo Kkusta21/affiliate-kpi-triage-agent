@@ -11,27 +11,64 @@
   "reasons": [
     "57% of traffic comes from CH, RO, which the offer does not accept."
   ],
+  "findings": [
+    {
+      "cause": "geo_mismatch",
+      "status": "confirmed",
+      "primary": true,
+      "severity": "high",
+      "evidence_strength": "strong",
+      "explanation": "57% of traffic comes from CH, RO, which the offer does not accept.",
+      "supporting_metrics": {
+        "disallowed_geo_share": 0.57,
+        "disallowed_geos": [
+          "CH",
+          "RO"
+        ]
+      },
+      "recommended_actions": [
+        "Tell the affiliate which countries the offer accepts and ask them to fix targeting.",
+        "Consider a geo redirect so disallowed traffic goes to a matching offer."
+      ]
+    }
+  ],
   "other_findings": [],
+  "stop_reason": "confirmed by traffic_quality",
   "recommended_actions": [
     "Tell the affiliate which countries the offer accepts and ask them to fix targeting.",
     "Consider a geo redirect so disallowed traffic goes to a matching offer."
   ],
   "est_revenue_loss_per_hour_usd": 98.14,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
   "llm_hypothesis": null,
   "kpi": {
     "metric": "epc",
+    "observed_at": "2026-11-16T12:00:00+00:00",
     "baseline": {
+      "hours_found": 21,
+      "hours_expected": 21,
       "clicks_total": 7351,
       "conversions_total": 369,
       "clicks_per_hour": 350.0,
+      "conversions_per_hour": 17.57,
       "conversion_rate": 0.0502,
       "revenue_per_hour_usd": 158.14,
       "epc_usd": 0.4518
     },
     "current": {
+      "hours_found": 3,
+      "hours_expected": 3,
       "clicks_total": 1061,
       "conversions_total": 20,
       "clicks_per_hour": 353.7,
+      "conversions_per_hour": 6.67,
       "conversion_rate": 0.0189,
       "revenue_per_hour_usd": 60.0,
       "epc_usd": 0.1697
@@ -43,14 +80,38 @@
       "epc": -62.4
     },
     "metric_change_pct": -62.4,
+    "conversion_z": -4.55,
+    "data_sufficient": true,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 192,
+      "missing_current_hours": 0,
+      "missing_baseline_hours": 0
+    },
     "enough_volume": true,
+    "statistically_significant": true,
+    "signal_strength": "strong",
     "significant": true,
+    "traffic_spike": false,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekdays",
+      "days_used": 5,
+      "clicks_per_hour": 348.7,
+      "conversion_rate": 0.0497,
+      "revenue_per_hour_usd": 156.0,
+      "epc_usd": 0.4474,
+      "metric_change_pct": -62.1
+    },
+    "seasonal_explained": false,
     "est_revenue_loss_per_hour_usd": 98.14
   },
   "evidence": {
     "landing_page_check": {
       "url": "https://lp.example-offers.test/fitness-it",
       "status_code": 200,
+      "outcome": "ok",
       "reachable": true,
       "latency_ms": 180,
       "slow": false,
@@ -63,6 +124,7 @@
       "status": "active",
       "daily_cap": 500,
       "conversions_today": 120,
+      "cap_used_share": 0.24,
       "cap_reached": false,
       "allowed_geos": [
         "IT"
@@ -200,5 +262,5 @@
       "reason": "Evidence points to geo_mismatch; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1005 | CMP-105 Fitness app trial IT\nRoot cause: geo_mismatch | severity: high | confidence: 0.90\nKPI: epc -62.4% vs baseline (conversion rate 5.02% -> 1.89%, 1061 clicks in the last 3h). Estimated loss: $98/hour.\nWhy:\n  - 57% of traffic comes from CH, RO, which the offer does not accept.\nRecommended actions (for a human to carry out):\n  1. Tell the affiliate which countries the offer accepts and ask them to fix targeting.\n  2. Consider a geo redirect so disallowed traffic goes to a matching offer.\nRunbooks: offer_and_geo.md#Geo mismatch and disallowed country traffic, offer_and_geo.md#Offer cap reached\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+  "summary": "Triage ALT-1005 | CMP-105 Fitness app trial IT\nRoot cause: geo_mismatch | severity: high | confidence: 0.90\nKPI: epc -62.4% vs baseline (conversion rate 5.02% -> 1.89%, 1061 clicks in the last 3h). Estimated loss: $98/hour.\n     Same hours on the previous 5 weekdays: -62.1%. Signal strength: strong.\nWhy:\n  - 57% of traffic comes from CH, RO, which the offer does not accept.\nRecommended actions (for a human to carry out):\n  1. Tell the affiliate which countries the offer accepts and ask them to fix targeting.\n  2. Consider a geo redirect so disallowed traffic goes to a matching offer.\nRunbooks: offer_and_geo.md#Geo mismatch and disallowed country traffic, offer_and_geo.md#Offer cap reached\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
 }

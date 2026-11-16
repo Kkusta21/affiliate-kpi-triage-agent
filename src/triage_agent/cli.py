@@ -54,6 +54,8 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--json", action="store_true", help="print the structured JSON result")
     sub.add_parser("demo", help="run every sample alert")
     sub.add_parser("incidents", help="list incidents in the store")
+    probe = sub.add_parser("probe", help="real HTTP probe of one landing page URL (needs network)")
+    probe.add_argument("url")
     args = parser.parse_args(argv)
 
     if args.verbose:
@@ -70,7 +72,35 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "incidents":
         print(json.dumps(IncidentStore(SETTINGS.db_path).list(), indent=2))
         return 0
+    if args.command == "probe":
+        return _probe(args.url)
     return 2
+
+
+def _probe(url: str) -> int:
+    """Run the real HTTP landing page probe once. The operator names the URL on the command
+    line, so its host is the allowlist for this call. Private addresses are still refused."""
+    from urllib.parse import urlsplit
+
+    from .datasource import PermanentToolError, TransientToolError
+    from .guardrails import sanitize_untrusted
+    from .http_probe import HttpLandingPageProbe
+    from .tools.investigation import classify_status
+
+    host = (urlsplit(url).hostname or "").lower()
+    probe = HttpLandingPageProbe((host,), SETTINGS.page_timeout_seconds, SETTINGS.page_max_bytes,
+                                 SETTINGS.page_pixel_marker)
+    try:
+        result = probe.fetch(url)
+    except (PermanentToolError, TransientToolError) as exc:
+        print(json.dumps({"ok": False, "error_type": type(exc).__name__, "error": str(exc)}, indent=2))
+        return 1
+    finally:
+        probe.close()
+    title, flagged = sanitize_untrusted(result.pop("title"), max_len=80)
+    print(json.dumps({"ok": True, "outcome": classify_status(result["status_code"]), **result,
+                      "title": title, "untrusted_text_flagged": flagged}, indent=2))
+    return 0
 
 
 if __name__ == "__main__":

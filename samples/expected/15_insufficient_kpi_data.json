@@ -1,0 +1,149 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1015",
+  "campaign_id": "CMP-112",
+  "campaign_name": "Energy switch NL",
+  "llm_mode": "offline",
+  "root_cause": "unknown",
+  "severity": "medium",
+  "confidence": 0.4,
+  "needs_human_review": true,
+  "reasons": [
+    "KPI history is incomplete (1 of 3 current hours and 18 of 21 baseline hours found, 187 hours of history), so the drop can neither be confirmed nor ruled out."
+  ],
+  "findings": [],
+  "other_findings": [],
+  "stop_reason": "decided from the KPI snapshot alone",
+  "recommended_actions": [
+    "Check the tracker export for the missing hours.",
+    "Re-run triage once the KPI data for the alert window is complete."
+  ],
+  "est_revenue_loss_per_hour_usd": 0.0,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "conversion_rate",
+    "observed_at": "2026-11-16T12:00:00+00:00",
+    "baseline": {
+      "hours_found": 18,
+      "hours_expected": 21,
+      "clicks_total": 5577,
+      "conversions_total": 234,
+      "clicks_per_hour": 309.8,
+      "conversions_per_hour": 13.0,
+      "conversion_rate": 0.042,
+      "revenue_per_hour_usd": 364.0,
+      "epc_usd": 1.1748
+    },
+    "current": {
+      "hours_found": 1,
+      "hours_expected": 3,
+      "clicks_total": 300,
+      "conversions_total": 2,
+      "clicks_per_hour": 300.0,
+      "conversions_per_hour": 2.0,
+      "conversion_rate": 0.0067,
+      "revenue_per_hour_usd": 56.0,
+      "epc_usd": 0.1867
+    },
+    "change_pct": {
+      "clicks": -3.2,
+      "conversion_rate": -84.0,
+      "revenue": -84.6,
+      "epc": -84.1
+    },
+    "metric_change_pct": -84.0,
+    "conversion_z": -3.03,
+    "data_sufficient": false,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 187,
+      "missing_current_hours": 2,
+      "missing_baseline_hours": 3
+    },
+    "enough_volume": true,
+    "statistically_significant": true,
+    "signal_strength": "none",
+    "significant": false,
+    "traffic_spike": false,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekdays",
+      "days_used": 5,
+      "clicks_per_hour": 308.7,
+      "conversion_rate": 0.0421,
+      "revenue_per_hour_usd": 364.0,
+      "epc_usd": 1.1793,
+      "metric_change_pct": -84.1
+    },
+    "seasonal_explained": false,
+    "est_revenue_loss_per_hour_usd": 308.0
+  },
+  "evidence": {
+    "runbook_search": {
+      "query": "escalation unknown cause",
+      "hits": [
+        {
+          "source": "escalation.md",
+          "heading": "Unknown cause escalation",
+          "snippet": "If landing page, offer, tracking and traffic checks are all healthy but the drop is real, the affiliate manager reviews manually. Typical hidden causes: advertiser changed price or checkout, creative fatigue, seasonality, a competing promotion.",
+          "score": 6,
+          "untrusted_text_flagged": false
+        },
+        {
+          "source": "escalation.md",
+          "heading": "Degraded checks",
+          "snippet": "If a check could not run (tool unavailable), the triage result is not conclusive. Re-run triage when the system is back and do not close the incident on partial evidence.",
+          "score": 3,
+          "untrusted_text_flagged": false
+        }
+      ]
+    }
+  },
+  "runbook_refs": [
+    "escalation.md#Unknown cause escalation",
+    "escalation.md#Degraded checks"
+  ],
+  "incident": {
+    "action": "created",
+    "incident_id": "INC-0001",
+    "occurrences": 1
+  },
+  "alert_draft": {
+    "to_role": "affiliate_manager",
+    "channel": "direct message",
+    "subject": "[MEDIUM] CMP-112 Energy switch NL: unknown",
+    "body": "Campaign: CMP-112 Energy switch NL (affiliate Delta Leads, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -84.0% vs baseline. No direct revenue loss measured in this window.\nWhy: KPI history is incomplete (1 of 3 current hours and 18 of 21 baseline hours found, 187 hours of history), so the drop can neither be confirmed nor ruled out.\nSuggested next steps:\n  1. Check the tracker export for the missing hours.\n  2. Re-run triage once the KPI data for the alert window is complete.\nNote: automated triage is not conclusive here, please review the evidence.",
+    "status": "draft_pending_approval"
+  },
+  "refused_requests": [],
+  "guardrail_flags": [],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    },
+    {
+      "step": 2,
+      "tool": "runbook_search",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "Evidence points to unknown; fetch the procedure."
+    }
+  ],
+  "summary": "Triage ALT-1015 | CMP-112 Energy switch NL\nRoot cause: unknown | severity: medium | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -84.0% vs baseline (conversion rate 4.20% -> 0.67%, 300 clicks in the last 3h). No direct revenue loss measured in this window.\n     Same hours on the previous 5 weekdays: -84.1%. Signal strength: none.\n     Data gaps: 2 current and 3 baseline hours missing.\nWhy:\n  - KPI history is incomplete (1 of 3 current hours and 18 of 21 baseline hours found, 187 hours of history), so the drop can neither be confirmed nor ruled out.\nRecommended actions (for a human to carry out):\n  1. Check the tracker export for the missing hours.\n  2. Re-run triage once the KPI data for the alert window is complete.\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> runbook_search"
+}

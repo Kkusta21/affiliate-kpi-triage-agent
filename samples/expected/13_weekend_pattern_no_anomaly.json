@@ -1,0 +1,109 @@
+{
+  "status": "completed",
+  "alert_id": "ALT-1013",
+  "campaign_id": "CMP-110",
+  "campaign_name": "Office furniture B2B DE",
+  "llm_mode": "offline",
+  "root_cause": "no_anomaly",
+  "severity": "info",
+  "confidence": 0.9,
+  "needs_human_review": false,
+  "reasons": [
+    "revenue is -63.2% vs the last 21 hours, but 0.0% vs the same hours on the previous 4 weekend days. This looks like the normal pattern for this time, not a drop."
+  ],
+  "findings": [],
+  "other_findings": [],
+  "stop_reason": "decided from the KPI snapshot alone",
+  "recommended_actions": [],
+  "est_revenue_loss_per_hour_usd": 0.0,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
+  "llm_hypothesis": null,
+  "kpi": {
+    "metric": "revenue",
+    "observed_at": "2026-11-14T12:00:00+00:00",
+    "baseline": {
+      "hours_found": 21,
+      "hours_expected": 21,
+      "clicks_total": 6597,
+      "conversions_total": 171,
+      "clicks_per_hour": 314.1,
+      "conversions_per_hour": 8.14,
+      "conversion_rate": 0.0259,
+      "revenue_per_hour_usd": 285.0,
+      "epc_usd": 0.9072
+    },
+    "current": {
+      "hours_found": 3,
+      "hours_expected": 3,
+      "clicks_total": 599,
+      "conversions_total": 9,
+      "clicks_per_hour": 199.7,
+      "conversions_per_hour": 3.0,
+      "conversion_rate": 0.015,
+      "revenue_per_hour_usd": 105.0,
+      "epc_usd": 0.5259
+    },
+    "change_pct": {
+      "clicks": -36.4,
+      "conversion_rate": -42.1,
+      "revenue": -63.2,
+      "epc": -42.0
+    },
+    "metric_change_pct": -63.2,
+    "conversion_z": -1.63,
+    "data_sufficient": true,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 528,
+      "missing_current_hours": 0,
+      "missing_baseline_hours": 0
+    },
+    "enough_volume": true,
+    "statistically_significant": null,
+    "signal_strength": "none",
+    "significant": false,
+    "traffic_spike": false,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekend_days",
+      "days_used": 4,
+      "clicks_per_hour": 199.7,
+      "conversion_rate": 0.015,
+      "revenue_per_hour_usd": 105.0,
+      "epc_usd": 0.5259,
+      "metric_change_pct": 0.0
+    },
+    "seasonal_explained": true,
+    "est_revenue_loss_per_hour_usd": 180.0
+  },
+  "evidence": {},
+  "runbook_refs": [],
+  "incident": {
+    "action": "none",
+    "incident_id": null,
+    "occurrences": 0
+  },
+  "alert_draft": null,
+  "refused_requests": [],
+  "guardrail_flags": [],
+  "rejection": null,
+  "steps": [
+    {
+      "step": 1,
+      "tool": "kpi_snapshot",
+      "status": "ok",
+      "attempts": 1,
+      "chosen_by": "offline",
+      "reason": "'kpi_snapshot' is the next check needed for a verdict."
+    }
+  ],
+  "summary": "Triage ALT-1013 | CMP-110 Office furniture B2B DE\nRoot cause: no_anomaly | severity: info | confidence: 0.90\nKPI: revenue -63.2% vs baseline (conversion rate 2.59% -> 1.50%, 599 clicks in the last 3h). No direct revenue loss measured in this window.\n     Same hours on the previous 4 weekend days: 0.0%. Signal strength: none.\nWhy:\n  - revenue is -63.2% vs the last 21 hours, but 0.0% vs the same hours on the previous 4 weekend days. This looks like the normal pattern for this time, not a drop.\nNo incident opened and no alert drafted.\nSteps: kpi_snapshot"
+}

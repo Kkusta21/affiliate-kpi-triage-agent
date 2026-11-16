@@ -9,31 +9,66 @@
   "confidence": 0.9,
   "needs_human_review": false,
   "reasons": [
-    "Landing page returned HTTP 503 in 30012 ms.",
-    "Clicks are still arriving, so every visitor hits a broken page."
+    "Landing page returned HTTP 503 (server error) in 30012 ms. Clicks are still arriving, so every visitor hits a broken page."
+  ],
+  "findings": [
+    {
+      "cause": "landing_page_down",
+      "status": "confirmed",
+      "primary": true,
+      "severity": "critical",
+      "evidence_strength": "strong",
+      "explanation": "Landing page returned HTTP 503 (server error) in 30012 ms. Clicks are still arriving, so every visitor hits a broken page.",
+      "supporting_metrics": {
+        "status_code": 503,
+        "outcome": "server_error",
+        "latency_ms": 30012
+      },
+      "recommended_actions": [
+        "Page tech on-call to restore the landing page.",
+        "Ask the affiliate to pause or redirect traffic to the backup page until it is back.",
+        "Re-run triage once the page returns 200 to confirm conversions recover."
+      ]
+    }
   ],
   "other_findings": [],
+  "stop_reason": "confirmed by landing_page_check",
   "recommended_actions": [
     "Page tech on-call to restore the landing page.",
     "Ask the affiliate to pause or redirect traffic to the backup page until it is back.",
     "Re-run triage once the page returns 200 to confirm conversions recover."
   ],
   "est_revenue_loss_per_hour_usd": 288.0,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
   "llm_hypothesis": null,
   "kpi": {
     "metric": "conversion_rate",
+    "observed_at": "2026-11-16T12:05:00+00:00",
     "baseline": {
+      "hours_found": 21,
+      "hours_expected": 21,
       "clicks_total": 8821,
       "conversions_total": 357,
       "clicks_per_hour": 420.0,
+      "conversions_per_hour": 17.0,
       "conversion_rate": 0.0405,
       "revenue_per_hour_usd": 306.0,
       "epc_usd": 0.7285
     },
     "current": {
+      "hours_found": 3,
+      "hours_expected": 3,
       "clicks_total": 1260,
       "conversions_total": 3,
       "clicks_per_hour": 420.0,
+      "conversions_per_hour": 1.0,
       "conversion_rate": 0.0024,
       "revenue_per_hour_usd": 18.0,
       "epc_usd": 0.0429
@@ -45,14 +80,38 @@
       "epc": -94.1
     },
     "metric_change_pct": -94.1,
+    "conversion_z": -6.82,
+    "data_sufficient": true,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 192,
+      "missing_current_hours": 0,
+      "missing_baseline_hours": 0
+    },
     "enough_volume": true,
+    "statistically_significant": true,
+    "signal_strength": "strong",
     "significant": true,
+    "traffic_spike": false,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekdays",
+      "days_used": 5,
+      "clicks_per_hour": 418.7,
+      "conversion_rate": 0.0406,
+      "revenue_per_hour_usd": 306.0,
+      "epc_usd": 0.7309,
+      "metric_change_pct": -94.1
+    },
+    "seasonal_explained": false,
     "est_revenue_loss_per_hour_usd": 288.0
   },
   "evidence": {
     "landing_page_check": {
       "url": "https://lp.example-offers.test/vpn-de",
       "status_code": 503,
+      "outcome": "server_error",
       "reachable": false,
       "latency_ms": 30012,
       "slow": true,
@@ -93,7 +152,7 @@
     "to_role": "tech_oncall",
     "channel": "pager + #ops-alerts",
     "subject": "[CRITICAL] CMP-101 VPN annual plan DE: landing page down",
-    "body": "Campaign: CMP-101 VPN annual plan DE (affiliate NordTraffic, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -94.1% vs baseline. Estimated loss $288/hour.\nWhy: Landing page returned HTTP 503 in 30012 ms. Clicks are still arriving, so every visitor hits a broken page.\nSuggested next steps:\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.",
+    "body": "Campaign: CMP-101 VPN annual plan DE (affiliate NordTraffic, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -94.1% vs baseline. Estimated loss $288/hour.\nWhy: Landing page returned HTTP 503 (server error) in 30012 ms. Clicks are still arriving, so every visitor hits a broken page.\nSuggested next steps:\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.",
     "status": "draft_pending_approval"
   },
   "refused_requests": [],
@@ -127,5 +186,5 @@
       "reason": "Evidence points to landing_page_down; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1009 | CMP-101 VPN annual plan DE\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: conversion_rate -94.1% vs baseline (conversion rate 4.05% -> 0.24%, 1260 clicks in the last 3h). Estimated loss: $288/hour.\nWhy:\n  - Landing page returned HTTP 503 in 30012 ms.\n  - Clicks are still arriving, so every visitor hits a broken page.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nFlags: prompt_injection_suspected_in_note\nSteps: kpi_snapshot -> landing_page_check -> runbook_search"
+  "summary": "Triage ALT-1009 | CMP-101 VPN annual plan DE\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: conversion_rate -94.1% vs baseline (conversion rate 4.05% -> 0.24%, 1260 clicks in the last 3h). Estimated loss: $288/hour.\n     Same hours on the previous 5 weekdays: -94.1%. Signal strength: strong.\nWhy:\n  - Landing page returned HTTP 503 (server error) in 30012 ms. Clicks are still arriving, so every visitor hits a broken page.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nFlags: prompt_injection_suspected_in_note\nSteps: kpi_snapshot -> landing_page_check -> runbook_search"
 }

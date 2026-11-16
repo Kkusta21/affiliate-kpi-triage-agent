@@ -56,6 +56,25 @@ class PlanStep(BaseModel):
     runbook_query: str | None = Field(default=None, max_length=120)
 
 
+class FindingStatus(str, Enum):
+    confirmed = "confirmed"        # a rule threshold is clearly met on healthy evidence
+    suspected = "suspected"        # close to a threshold: worth a look, never the root cause by itself
+    inconclusive = "inconclusive"  # the check could not run or the data is incomplete: cannot be ruled out
+
+
+class Finding(BaseModel):
+    """One independently supported finding. Built only by rules.py from tool evidence."""
+
+    cause: RootCause
+    status: FindingStatus
+    primary: bool = False
+    severity: Severity
+    evidence_strength: Literal["strong", "moderate", "weak"]
+    explanation: str
+    supporting_metrics: dict[str, Any] = Field(default_factory=dict)
+    recommended_actions: list[str] = Field(default_factory=list)
+
+
 class Verdict(BaseModel):
     root_cause: RootCause
     severity: Severity
@@ -63,10 +82,23 @@ class Verdict(BaseModel):
     needs_human_review: bool
     reasons: list[str]
     recommended_actions: list[str]
-    other_findings: list[str] = Field(default_factory=list)  # secondary causes, lower in the priority order
+    findings: list[Finding] = Field(default_factory=list)    # every finding, the primary one first
+    other_findings: list[str] = Field(default_factory=list)  # the non-primary findings as short text
+    stop_reason: str = ""                                     # why the investigation ended where it did
     owner_role: str | None = None
     est_revenue_loss_per_hour_usd: float = 0.0
     unavailable_checks: list[str] = Field(default_factory=list)
+
+
+class LLMUsage(BaseModel):
+    """Totals for the model calls of one run. All zero in offline mode."""
+
+    model: str | None = None
+    calls: int = 0
+    failed_calls: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    latency_ms: float = 0.0
 
 
 class StepRecord(BaseModel):
@@ -107,9 +139,12 @@ class TriageResult(BaseModel):
     confidence: float | None = None
     needs_human_review: bool = False
     reasons: list[str] = Field(default_factory=list)
+    findings: list[Finding] = Field(default_factory=list)
     other_findings: list[str] = Field(default_factory=list)
+    stop_reason: str = ""
     recommended_actions: list[str] = Field(default_factory=list)
     est_revenue_loss_per_hour_usd: float = 0.0
+    llm_usage: LLMUsage = Field(default_factory=LLMUsage)
     llm_hypothesis: str | None = None
     kpi: dict[str, Any] = Field(default_factory=dict)
     evidence: dict[str, Any] = Field(default_factory=dict)

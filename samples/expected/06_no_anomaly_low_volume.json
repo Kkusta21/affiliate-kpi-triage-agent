@@ -11,24 +11,41 @@
   "reasons": [
     "Only 60 clicks in the window, below the 100 needed to trust a change."
   ],
+  "findings": [],
   "other_findings": [],
+  "stop_reason": "decided from the KPI snapshot alone",
   "recommended_actions": [],
   "est_revenue_loss_per_hour_usd": 0.0,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
   "llm_hypothesis": null,
   "kpi": {
     "metric": "conversion_rate",
+    "observed_at": "2026-11-16T12:00:00+00:00",
     "baseline": {
+      "hours_found": 21,
+      "hours_expected": 21,
       "clicks_total": 421,
       "conversions_total": 21,
       "clicks_per_hour": 20.0,
+      "conversions_per_hour": 1.0,
       "conversion_rate": 0.0499,
       "revenue_per_hour_usd": 40.0,
       "epc_usd": 1.9952
     },
     "current": {
+      "hours_found": 3,
+      "hours_expected": 3,
       "clicks_total": 60,
       "conversions_total": 1,
       "clicks_per_hour": 20.0,
+      "conversions_per_hour": 0.33,
       "conversion_rate": 0.0167,
       "revenue_per_hour_usd": 13.33,
       "epc_usd": 0.6667
@@ -40,8 +57,31 @@
       "epc": -66.6
     },
     "metric_change_pct": -66.5,
+    "conversion_z": -1.15,
+    "data_sufficient": true,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 192,
+      "missing_current_hours": 0,
+      "missing_baseline_hours": 0
+    },
     "enough_volume": false,
+    "statistically_significant": false,
+    "signal_strength": "none",
     "significant": false,
+    "traffic_spike": false,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekdays",
+      "days_used": 5,
+      "clicks_per_hour": 18.7,
+      "conversion_rate": 0.0536,
+      "revenue_per_hour_usd": 40.0,
+      "epc_usd": 2.1429,
+      "metric_change_pct": -68.8
+    },
+    "seasonal_explained": false,
     "est_revenue_loss_per_hour_usd": 26.67
   },
   "evidence": {},
@@ -65,5 +105,5 @@
       "reason": "'kpi_snapshot' is the next check needed for a verdict."
     }
   ],
-  "summary": "Triage ALT-1006 | CMP-106 Niche B2B webinar NL\nRoot cause: no_anomaly | severity: info | confidence: 0.90\nKPI: conversion_rate -66.5% vs baseline (conversion rate 4.99% -> 1.67%, 60 clicks in the last 3h). No direct revenue loss measured in this window.\nWhy:\n  - Only 60 clicks in the window, below the 100 needed to trust a change.\nNo incident opened and no alert drafted.\nSteps: kpi_snapshot"
+  "summary": "Triage ALT-1006 | CMP-106 Niche B2B webinar NL\nRoot cause: no_anomaly | severity: info | confidence: 0.90\nKPI: conversion_rate -66.5% vs baseline (conversion rate 4.99% -> 1.67%, 60 clicks in the last 3h). No direct revenue loss measured in this window.\n     Same hours on the previous 5 weekdays: -68.8%. Signal strength: none.\nWhy:\n  - Only 60 clicks in the window, below the 100 needed to trust a change.\nNo incident opened and no alert drafted.\nSteps: kpi_snapshot"
 }

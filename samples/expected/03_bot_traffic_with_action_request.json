@@ -11,28 +11,64 @@
   "reasons": [
     "Sub source sub_778 sends 67% of clicks with bot score 0.91."
   ],
+  "findings": [
+    {
+      "cause": "traffic_quality",
+      "status": "confirmed",
+      "primary": true,
+      "severity": "high",
+      "evidence_strength": "strong",
+      "explanation": "Sub source sub_778 sends 67% of clicks with bot score 0.91.",
+      "supporting_metrics": {
+        "sub_id": "sub_778",
+        "share": 0.67,
+        "bot_score": 0.91
+      },
+      "recommended_actions": [
+        "Affiliate manager: review the flagged sub source and decide whether to block it.",
+        "Hold payout for the flagged source until the review is done.",
+        "Ask the affiliate for the placement behind the flagged sub source."
+      ]
+    }
+  ],
   "other_findings": [],
+  "stop_reason": "confirmed by traffic_quality",
   "recommended_actions": [
     "Affiliate manager: review the flagged sub source and decide whether to block it.",
     "Hold payout for the flagged source until the review is done.",
     "Ask the affiliate for the placement behind the flagged sub source."
   ],
   "est_revenue_loss_per_hour_usd": 0.0,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
   "llm_hypothesis": null,
   "kpi": {
     "metric": "conversion_rate",
+    "observed_at": "2026-11-16T12:00:00+00:00",
     "baseline": {
+      "hours_found": 21,
+      "hours_expected": 21,
       "clicks_total": 10501,
       "conversions_total": 630,
       "clicks_per_hour": 500.0,
+      "conversions_per_hour": 30.0,
       "conversion_rate": 0.06,
       "revenue_per_hour_usd": 195.0,
       "epc_usd": 0.39
     },
     "current": {
+      "hours_found": 3,
+      "hours_expected": 3,
       "clicks_total": 4655,
       "conversions_total": 90,
       "clicks_per_hour": 1551.7,
+      "conversions_per_hour": 30.0,
       "conversion_rate": 0.0193,
       "revenue_per_hour_usd": 195.0,
       "epc_usd": 0.1257
@@ -44,14 +80,38 @@
       "epc": -67.8
     },
     "metric_change_pct": -67.8,
+    "conversion_z": -10.86,
+    "data_sufficient": true,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 192,
+      "missing_current_hours": 0,
+      "missing_baseline_hours": 0
+    },
     "enough_volume": true,
+    "statistically_significant": true,
+    "signal_strength": "strong",
     "significant": true,
+    "traffic_spike": true,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekdays",
+      "days_used": 5,
+      "clicks_per_hour": 498.7,
+      "conversion_rate": 0.0602,
+      "revenue_per_hour_usd": 195.0,
+      "epc_usd": 0.391,
+      "metric_change_pct": -67.9
+    },
+    "seasonal_explained": false,
     "est_revenue_loss_per_hour_usd": 0.0
   },
   "evidence": {
     "landing_page_check": {
       "url": "https://lp.example-offers.test/lang-es",
       "status_code": 200,
+      "outcome": "ok",
       "reachable": true,
       "latency_ms": 180,
       "slow": false,
@@ -64,6 +124,7 @@
       "status": "active",
       "daily_cap": 500,
       "conversions_today": 120,
+      "cap_used_share": 0.24,
       "cap_reached": false,
       "allowed_geos": [
         "ES"
@@ -217,5 +278,5 @@
       "reason": "Evidence points to traffic_quality; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1003 | CMP-103 Language app install ES\nRoot cause: traffic_quality | severity: high | confidence: 0.90\nKPI: conversion_rate -67.8% vs baseline (conversion rate 6.00% -> 1.93%, 4655 clicks in the last 3h). No direct revenue loss measured in this window.\nWhy:\n  - Sub source sub_778 sends 67% of clicks with bot score 0.91.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the flagged sub source and decide whether to block it.\n  2. Hold payout for the flagged source until the review is done.\n  3. Ask the affiliate for the placement behind the flagged sub source.\nRunbooks: traffic_quality.md#Bot traffic from a sub source, traffic_quality.md#Fraud review\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nRefused request: \"block sub_778\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nRefused request: \"pause the campaign\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nFlags: action_request_refused\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+  "summary": "Triage ALT-1003 | CMP-103 Language app install ES\nRoot cause: traffic_quality | severity: high | confidence: 0.90\nKPI: conversion_rate -67.8% vs baseline (conversion rate 6.00% -> 1.93%, 4655 clicks in the last 3h). No direct revenue loss measured in this window.\n     Same hours on the previous 5 weekdays: -67.9%. Signal strength: strong.\nWhy:\n  - Sub source sub_778 sends 67% of clicks with bot score 0.91.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the flagged sub source and decide whether to block it.\n  2. Hold payout for the flagged source until the review is done.\n  3. Ask the affiliate for the placement behind the flagged sub source.\nRunbooks: traffic_quality.md#Bot traffic from a sub source, traffic_quality.md#Fraud review\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nRefused request: \"block sub_778\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nRefused request: \"pause the campaign\". This agent is read-only. Changes to campaigns, offers, payouts or traffic sources need a human with the right permissions.\nFlags: action_request_refused\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
 }

@@ -9,29 +9,46 @@
   "confidence": 0.4,
   "needs_human_review": true,
   "reasons": [
-    "The drop is real but landing page, offer, tracking and traffic checks found no cause."
+    "The drop is real but landing page, offer, tracking and traffic checks found no confirmed cause."
   ],
+  "findings": [],
   "other_findings": [],
+  "stop_reason": "all checks ran, none confirmed a cause",
   "recommended_actions": [
     "Affiliate manager: review the evidence manually, automated checks found no cause.",
     "Check with the advertiser for changes on their side (creative, price, checkout)."
   ],
   "est_revenue_loss_per_hour_usd": 88.0,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
   "llm_hypothesis": null,
   "kpi": {
     "metric": "conversion_rate",
+    "observed_at": "2026-11-16T12:00:00+00:00",
     "baseline": {
+      "hours_found": 21,
+      "hours_expected": 21,
       "clicks_total": 8401,
       "conversions_total": 336,
       "clicks_per_hour": 400.0,
+      "conversions_per_hour": 16.0,
       "conversion_rate": 0.04,
       "revenue_per_hour_usd": 192.0,
       "epc_usd": 0.4799
     },
     "current": {
+      "hours_found": 3,
+      "hours_expected": 3,
       "clicks_total": 1205,
       "conversions_total": 26,
       "clicks_per_hour": 401.7,
+      "conversions_per_hour": 8.67,
       "conversion_rate": 0.0216,
       "revenue_per_hour_usd": 104.0,
       "epc_usd": 0.2589
@@ -43,14 +60,38 @@
       "epc": -46.1
     },
     "metric_change_pct": -46.0,
+    "conversion_z": -3.14,
+    "data_sufficient": true,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 192,
+      "missing_current_hours": 0,
+      "missing_baseline_hours": 0
+    },
     "enough_volume": true,
+    "statistically_significant": true,
+    "signal_strength": "moderate",
     "significant": true,
+    "traffic_spike": false,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekdays",
+      "days_used": 5,
+      "clicks_per_hour": 398.7,
+      "conversion_rate": 0.0401,
+      "revenue_per_hour_usd": 192.0,
+      "epc_usd": 0.4816,
+      "metric_change_pct": -46.1
+    },
+    "seasonal_explained": false,
     "est_revenue_loss_per_hour_usd": 88.0
   },
   "evidence": {
     "landing_page_check": {
       "url": "https://lp.example-offers.test/credit-pl",
       "status_code": 200,
+      "outcome": "ok",
       "reachable": true,
       "latency_ms": 180,
       "slow": false,
@@ -63,6 +104,7 @@
       "status": "active",
       "daily_cap": 500,
       "conversions_today": 120,
+      "cap_used_share": 0.24,
       "cap_reached": false,
       "allowed_geos": [
         "PL"
@@ -149,7 +191,7 @@
     "to_role": "affiliate_manager",
     "channel": "direct message",
     "subject": "[HIGH] CMP-107 Credit score app PL: unknown",
-    "body": "Campaign: CMP-107 Credit score app PL (affiliate Vistula Performance, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -46.0% vs baseline. Estimated loss $88/hour.\nWhy: The drop is real but landing page, offer, tracking and traffic checks found no cause.\nSuggested next steps:\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nNote: automated triage is not conclusive here, please review the evidence.",
+    "body": "Campaign: CMP-107 Credit score app PL (affiliate Vistula Performance, manager dana)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: conversion_rate changed -46.0% vs baseline. Estimated loss $88/hour.\nWhy: The drop is real but landing page, offer, tracking and traffic checks found no confirmed cause.\nSuggested next steps:\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nNote: automated triage is not conclusive here, please review the evidence.",
     "status": "draft_pending_approval"
   },
   "refused_requests": [],
@@ -205,5 +247,5 @@
       "reason": "Evidence points to unknown; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1007 | CMP-107 Credit score app PL\nRoot cause: unknown | severity: high | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -46.0% vs baseline (conversion rate 4.00% -> 2.16%, 1205 clicks in the last 3h). Estimated loss: $88/hour.\nWhy:\n  - The drop is real but landing page, offer, tracking and traffic checks found no cause.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check x3 -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
+  "summary": "Triage ALT-1007 | CMP-107 Credit score app PL\nRoot cause: unknown | severity: high | confidence: 0.40 | NEEDS HUMAN REVIEW\nKPI: conversion_rate -46.0% vs baseline (conversion rate 4.00% -> 2.16%, 1205 clicks in the last 3h). Estimated loss: $88/hour.\n     Same hours on the previous 5 weekdays: -46.1%. Signal strength: moderate.\nWhy:\n  - The drop is real but landing page, offer, tracking and traffic checks found no confirmed cause.\nRecommended actions (for a human to carry out):\n  1. Affiliate manager: review the evidence manually, automated checks found no cause.\n  2. Check with the advertiser for changes on their side (creative, price, checkout).\nRunbooks: escalation.md#Unknown cause escalation, escalation.md#Degraded checks\nIncident INC-0001 created (seen 1x). Alert drafted for affiliate_manager, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check x3 -> offer_status -> tracking_check -> traffic_quality -> runbook_search"
 }

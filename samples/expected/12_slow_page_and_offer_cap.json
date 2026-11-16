@@ -9,33 +9,86 @@
   "confidence": 0.9,
   "needs_human_review": false,
   "reasons": [
-    "Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit.",
-    "Many visitors leave before the page loads."
+    "Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before it loads."
+  ],
+  "findings": [
+    {
+      "cause": "landing_page_down",
+      "status": "confirmed",
+      "primary": true,
+      "severity": "critical",
+      "evidence_strength": "moderate",
+      "explanation": "Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before it loads.",
+      "supporting_metrics": {
+        "status_code": 200,
+        "outcome": "ok",
+        "latency_ms": 14500
+      },
+      "recommended_actions": [
+        "Page tech on-call to restore the landing page.",
+        "Ask the affiliate to pause or redirect traffic to the backup page until it is back.",
+        "Re-run triage once the page returns 200 to confirm conversions recover."
+      ]
+    },
+    {
+      "cause": "offer_cap_reached",
+      "status": "confirmed",
+      "primary": false,
+      "severity": "medium",
+      "evidence_strength": "strong",
+      "explanation": "Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.",
+      "supporting_metrics": {
+        "offer_id": "OFF-19",
+        "status": "active",
+        "daily_cap": 200,
+        "conversions_today": 200
+      },
+      "recommended_actions": [
+        "Tell the affiliate the daily cap is reached so they can shift traffic.",
+        "Ask the advertiser for a cap increase if the campaign is profitable."
+      ]
+    }
   ],
   "other_findings": [
     "offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected."
   ],
+  "stop_reason": "confirmed by landing_page_check",
   "recommended_actions": [
     "Page tech on-call to restore the landing page.",
     "Ask the affiliate to pause or redirect traffic to the backup page until it is back.",
     "Re-run triage once the page returns 200 to confirm conversions recover."
   ],
   "est_revenue_loss_per_hour_usd": 266.67,
+  "llm_usage": {
+    "model": null,
+    "calls": 0,
+    "failed_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "latency_ms": 0.0
+  },
   "llm_hypothesis": null,
   "kpi": {
     "metric": "revenue",
+    "observed_at": "2026-11-16T12:00:00+00:00",
     "baseline": {
+      "hours_found": 21,
+      "hours_expected": 21,
       "clicks_total": 6301,
       "conversions_total": 315,
       "clicks_per_hour": 300.0,
+      "conversions_per_hour": 15.0,
       "conversion_rate": 0.05,
       "revenue_per_hour_usd": 300.0,
       "epc_usd": 0.9998
     },
     "current": {
+      "hours_found": 3,
+      "hours_expected": 3,
       "clicks_total": 895,
       "conversions_total": 5,
       "clicks_per_hour": 298.3,
+      "conversions_per_hour": 1.67,
       "conversion_rate": 0.0056,
       "revenue_per_hour_usd": 33.33,
       "epc_usd": 0.1117
@@ -47,14 +100,38 @@
       "epc": -88.8
     },
     "metric_change_pct": -88.9,
+    "conversion_z": -6.03,
+    "data_sufficient": true,
+    "data_quality": {
+      "timestamped": true,
+      "history_hours": 192,
+      "missing_current_hours": 0,
+      "missing_baseline_hours": 0
+    },
     "enough_volume": true,
+    "statistically_significant": null,
+    "signal_strength": "strong",
     "significant": true,
+    "traffic_spike": false,
+    "conversions_stopped": false,
+    "seasonal": {
+      "available": true,
+      "day_type": "weekdays",
+      "days_used": 5,
+      "clicks_per_hour": 298.7,
+      "conversion_rate": 0.0502,
+      "revenue_per_hour_usd": 300.0,
+      "epc_usd": 1.0045,
+      "metric_change_pct": -88.9
+    },
+    "seasonal_explained": false,
     "est_revenue_loss_per_hour_usd": 266.67
   },
   "evidence": {
     "landing_page_check": {
       "url": "https://lp.example-offers.test/solar-es",
       "status_code": 200,
+      "outcome": "ok",
       "reachable": true,
       "latency_ms": 14500,
       "slow": true,
@@ -67,6 +144,7 @@
       "status": "active",
       "daily_cap": 200,
       "conversions_today": 200,
+      "cap_used_share": 1.0,
       "cap_reached": true,
       "allowed_geos": [
         "ES"
@@ -105,7 +183,7 @@
     "to_role": "tech_oncall",
     "channel": "pager + #ops-alerts",
     "subject": "[CRITICAL] CMP-109 Solar panel quote ES: landing page down",
-    "body": "Campaign: CMP-109 Solar panel quote ES (affiliate Iberia Leads, manager omar)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: revenue changed -88.9% vs baseline. Estimated loss $267/hour.\nWhy: Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before the page loads.\nAlso found: offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nSuggested next steps:\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.",
+    "body": "Campaign: CMP-109 Solar panel quote ES (affiliate Iberia Leads, manager omar)\nIncident: INC-0001 (created, seen 1x)\nWhat happened: revenue changed -88.9% vs baseline. Estimated loss $267/hour.\nWhy: Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before it loads.\nAlso found: offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nSuggested next steps:\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.",
     "status": "draft_pending_approval"
   },
   "refused_requests": [],
@@ -145,5 +223,5 @@
       "reason": "Evidence points to landing_page_down; fetch the procedure."
     }
   ],
-  "summary": "Triage ALT-1012 | CMP-109 Solar panel quote ES\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: revenue -88.9% vs baseline (conversion rate 5.00% -> 0.56%, 895 clicks in the last 3h). Estimated loss: $267/hour.\nWhy:\n  - Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit.\n  - Many visitors leave before the page loads.\nAlso found (lower priority, check after the main cause):\n  - offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> runbook_search"
+  "summary": "Triage ALT-1012 | CMP-109 Solar panel quote ES\nRoot cause: landing_page_down | severity: critical | confidence: 0.90\nKPI: revenue -88.9% vs baseline (conversion rate 5.00% -> 0.56%, 895 clicks in the last 3h). Estimated loss: $267/hour.\n     Same hours on the previous 5 weekdays: -88.9%. Signal strength: strong.\nWhy:\n  - Landing page returned HTTP 200 but took 14500 ms, over the 10000 ms limit. Many visitors leave before it loads.\nAlso found (lower priority, check after the main cause):\n  - offer_cap_reached: Offer OFF-19 hit its daily cap (200/200); further conversions are rejected.\nRecommended actions (for a human to carry out):\n  1. Page tech on-call to restore the landing page.\n  2. Ask the affiliate to pause or redirect traffic to the backup page until it is back.\n  3. Re-run triage once the page returns 200 to confirm conversions recover.\nRunbooks: landing_page_down.md#Landing page outage, landing_page_down.md#Slow landing page\nIncident INC-0001 created (seen 1x). Alert drafted for tech_oncall, waiting for approval.\nSteps: kpi_snapshot -> landing_page_check -> offer_status -> runbook_search"
 }

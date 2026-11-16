@@ -22,10 +22,11 @@ from langgraph.graph import END, START, StateGraph
 
 from . import rules
 from .config import SETTINGS, Settings
-from .datasource import DataSource, TransientToolError
+from .datasource import DataSource, TransientToolError, make_datasource
 from .guardrails import find_refused_requests, sanitize_untrusted, validate_alert
 from .llm import LLM, OfflineLLM, PlanContext, make_llm
-from .models import Alert, AlertDraft, IncidentRef, PlanStep, RootCause, StepRecord, TriageResult, Verdict
+from .models import (Alert, AlertDraft, IncidentRef, LLMUsage, PlanStep, RootCause, StepRecord, TriageResult,
+                     Verdict)
 from .tools import FINISH, INVESTIGATION_TOOLS, ToolContext
 from .tools.actions import IncidentStore, draft_alert, upsert_incident
 from .tracing import Tracer, digest
@@ -59,6 +60,7 @@ class State(TypedDict, total=False):
     next_chosen_by: str
     runbook_query: str | None
     planner_steps: int
+    planner_failures: int
     phase: str
     verdict: dict[str, Any]
     llm_hypothesis: str | None
@@ -84,6 +86,7 @@ def build_graph(deps: Deps):
         if alert is None:
             tracer.event("guardrail", outcome="rejected", rejection=rejection)
             return {"rejection": rejection, "flags": ["invalid_input"]}
+        tracer.bind(campaign_id=alert.campaign_id, alert_id=alert.alert_id)
         campaign = deps.ds.get_campaign(alert.campaign_id)
         if campaign is None:
             rejection = {"code": "unknown_campaign",
@@ -104,7 +107,7 @@ def build_graph(deps: Deps):
                       "refused_request_count": len(refused)}
         return {"alert": alert.model_dump(mode="json"), "campaign": campaign, "note_facts": note_facts,
                 "flags": flags, "refused": refused, "evidence": {}, "steps": [], "planner_steps": 0,
-                "phase": "investigate"}
+                "planner_failures": 0, "phase": "investigate"}
 
     # ------------------------------------------------------------------- plan
     def _valid(step: PlanStep, state: State) -> str | None:
@@ -133,22 +136,35 @@ def build_graph(deps: Deps):
         )
         chosen_by = deps.llm.mode
         flags = state.get("flags", [])
-        try:
-            step = deps.llm.plan(ctx)
-            problem = _valid(step, state)
-        except Exception as exc:  # model or network failure
-            step, problem = None, f"planner error: {type(exc).__name__}: {exc}"
-        if problem:
-            tracer.event("plan_override", problem=problem, proposed=step.action if step else None)
+        failures = state.get("planner_failures", 0)
+        if failures >= s.planner_max_consecutive_failures:
+            # Circuit breaker: the planner model failed several times in a row. Stop paying for
+            # (and waiting on) a broken model and let the deterministic policy finish the run.
+            if "planner_circuit_open" not in flags:
+                tracer.event("planner_circuit_open", consecutive_failures=failures)
+            flags = _add_flag({"flags": flags}, "planner_circuit_open")
             step = deps.fallback.plan(ctx)
             chosen_by = "policy_fallback"
-            flags = _add_flag(state, "planner_fallback_used")
+        else:
+            try:
+                step = deps.llm.plan(ctx)
+                problem = _valid(step, state)
+            except Exception as exc:  # model or network failure
+                step, problem = None, f"planner error: {type(exc).__name__}: {exc}"
+            if problem:
+                tracer.event("plan_override", problem=problem, proposed=step.action if step else None)
+                step = deps.fallback.plan(ctx)
+                chosen_by = "policy_fallback"
+                flags = _add_flag(state, "planner_fallback_used")
+                failures += 1
+            else:
+                failures = 0
 
         tracer.event("plan", action=step.action, chosen_by=chosen_by, reason=step.reason)
         query, _ = sanitize_untrusted(step.runbook_query, max_len=120)
         return {"next_tool": None if step.action == FINISH else step.action, "next_reason": step.reason,
                 "next_chosen_by": chosen_by, "runbook_query": query or None,
-                "planner_steps": state["planner_steps"] + 1, "flags": flags}
+                "planner_steps": state["planner_steps"] + 1, "planner_failures": failures, "flags": flags}
 
     # ------------------------------------------------------------------- tool
     def run_tool(state: State) -> State:
@@ -163,19 +179,29 @@ def build_graph(deps: Deps):
         status = "failed"
         while attempts < s.tool_max_attempts:
             attempts += 1
+            attempt_started = time.perf_counter()
+
+            def elapsed() -> float:
+                return round((time.perf_counter() - attempt_started) * 1000, 2)
+
             try:
                 result = spec.fn(ctx)
                 status = "ok"
-                tracer.event("tool_call", tool=name, attempt=attempts, ok=True, result=digest(result))
+                tracer.event("tool_call", tool=name, attempt=attempts, ok=True, duration_ms=elapsed(),
+                             result=digest(result))
                 break
             except TransientToolError as exc:
                 result = {"error": str(exc), "retryable": True}
-                tracer.event("tool_call", tool=name, attempt=attempts, ok=False, error=str(exc), retryable=True)
+                tracer.event("tool_call", tool=name, attempt=attempts, ok=False, duration_ms=elapsed(),
+                             error=str(exc), retryable=True)
                 if attempts < s.tool_max_attempts:
-                    deps.sleep(s.tool_backoff_seconds * 2 ** (attempts - 1))
+                    # Exponential backoff, or the wait the remote side asked for (rate limit), capped.
+                    wait = s.tool_backoff_seconds * 2 ** (attempts - 1)
+                    deps.sleep(min(max(wait, getattr(exc, "retry_after", 0.0) or 0.0), 30.0))
             except Exception as exc:  # permanent: do not retry
                 result = {"error": f"{type(exc).__name__}: {exc}", "retryable": False}
-                tracer.event("tool_call", tool=name, attempt=attempts, ok=False, error=result["error"], retryable=False)
+                tracer.event("tool_call", tool=name, attempt=attempts, ok=False, duration_ms=elapsed(),
+                             error=result["error"], retryable=False)
                 break
 
         flags = state.get("flags", [])
@@ -211,7 +237,9 @@ def build_graph(deps: Deps):
         verdict = rules.evaluate(evidence, s, llm_hypothesis=hypothesis)
         tracer.event("diagnosis", root_cause=verdict.root_cause.value, severity=verdict.severity.value,
                      confidence=verdict.confidence, needs_human_review=verdict.needs_human_review,
-                     llm_hypothesis=hypothesis, reasons=verdict.reasons, other_findings=verdict.other_findings)
+                     llm_hypothesis=hypothesis, reasons=verdict.reasons, stop_reason=verdict.stop_reason,
+                     findings=[{"cause": f.cause.value, "status": f.status.value, "primary": f.primary,
+                                "evidence_strength": f.evidence_strength} for f in verdict.findings])
         return {"verdict": verdict.model_dump(mode="json"), "llm_hypothesis": hypothesis, "next_tool": None,
                 "flags": flags}
 
@@ -225,16 +253,20 @@ def build_graph(deps: Deps):
         if verdict.root_cause is RootCause.no_anomaly:
             tracer.event("action", incident="none", alert_draft=False, reason="no anomaly")
             return {"incident": IncidentRef(action="none").model_dump(), "alert_draft": None}
+        started = time.perf_counter()
         incident = upsert_incident(deps.incidents, state["campaign"]["id"], state["alert"]["alert_id"], verdict)
-        tracer.event("tool_call", tool="incident_store", attempt=1, ok=True, result=digest(incident.model_dump()))
+        tracer.event("tool_call", tool="incident_store", attempt=1, ok=True,
+                     duration_ms=round((time.perf_counter() - started) * 1000, 2), result=digest(incident.model_dump()))
         flags = state.get("flags", [])
         try:
             note = deps.llm.analyst_note(state["verdict"], state["evidence"])
         except Exception as exc:  # the draft is complete without the note, but the failure must be visible
             note = None
             flags = _llm_call_failed(state, "analyst_note", exc, "analyst_note_unavailable")
+        started = time.perf_counter()
         draft = draft_alert(state["campaign"], state["evidence"].get("kpi_snapshot", {}), verdict, incident, note)
         tracer.event("tool_call", tool="draft_alert", attempt=1, ok=True,
+                     duration_ms=round((time.perf_counter() - started) * 1000, 2),
                      result=digest({"to_role": draft.to_role, "subject": draft.subject, "status": draft.status}))
         return {"incident": incident.model_dump(), "alert_draft": draft.model_dump(), "flags": flags}
 
@@ -242,8 +274,11 @@ def build_graph(deps: Deps):
     def finalize(state: State) -> State:
         result = _build_result(state, deps)
         tracer.event("final", status=result.status, root_cause=result.root_cause, severity=result.severity,
-                     incident=result.incident.incident_id, needs_human_review=result.needs_human_review,
-                     flags=result.guardrail_flags, tool_calls=len(result.steps))
+                     incident=result.incident.incident_id, incident_action=result.incident.action,
+                     approval_status=result.alert_draft.status if result.alert_draft else "no_alert_drafted",
+                     needs_human_review=result.needs_human_review, flags=result.guardrail_flags,
+                     tool_calls=len(result.steps), tool_retries=sum(st.attempts - 1 for st in result.steps),
+                     llm_usage=result.llm_usage.model_dump())
         return {"result": result.model_dump(mode="json")}
 
     graph = StateGraph(State)
@@ -290,12 +325,21 @@ def _summary(result: TriageResult) -> str:
         f"confidence: {result.confidence:.2f}" + (" | NEEDS HUMAN REVIEW" if result.needs_human_review else ""),
     ]
     if kpi and "error" not in kpi:
+        change = "no baseline to compare" if kpi["metric_change_pct"] is None else f"{kpi['metric_change_pct']}% vs baseline"
         lines.append(
-            f"KPI: {kpi['metric']} {kpi['metric_change_pct']}% vs baseline "
+            f"KPI: {kpi['metric']} {change} "
             f"(conversion rate {_pct(kpi['baseline']['conversion_rate'])} -> {_pct(kpi['current']['conversion_rate'])}, "
             f"{kpi['current']['clicks_total']} clicks in the last {SETTINGS.current_hours}h). "
             + _loss_text(result.est_revenue_loss_per_hour_usd)
         )
+        season = kpi.get("seasonal", {})
+        quality = kpi.get("data_quality", {})
+        if season.get("available"):
+            lines.append(f"     Same hours on the previous {season['days_used']} {season['day_type'].replace('_', ' ')}: "
+                         f"{season['metric_change_pct']}%. Signal strength: {kpi.get('signal_strength')}.")
+        if quality.get("missing_current_hours") or quality.get("missing_baseline_hours"):
+            lines.append(f"     Data gaps: {quality.get('missing_current_hours', 0)} current and "
+                         f"{quality.get('missing_baseline_hours', 0)} baseline hours missing.")
     lines.append("Why:")
     lines += [f"  - {reason}" for reason in result.reasons]
     if result.other_findings:
@@ -322,6 +366,18 @@ def _summary(result: TriageResult) -> str:
     return "\n".join(lines)
 
 
+def _llm_usage(tracer: Tracer) -> LLMUsage:
+    """Totals of the model calls of this run, read back from the trace."""
+    calls = [e for e in tracer.events if e["event"] == "llm_call"]
+    return LLMUsage(
+        model=next((e["model"] for e in calls if e.get("model")), None),
+        calls=len(calls), failed_calls=sum(not e["ok"] for e in calls),
+        input_tokens=sum(e.get("input_tokens") or 0 for e in calls),
+        output_tokens=sum(e.get("output_tokens") or 0 for e in calls),
+        latency_ms=round(sum(e.get("latency_ms") or 0.0 for e in calls), 1),
+    )
+
+
 def _build_result(state: State, deps: Deps) -> TriageResult:
     alert = state.get("alert") or {}
     raw = state.get("raw_input") if isinstance(state.get("raw_input"), dict) else {}
@@ -330,7 +386,7 @@ def _build_result(state: State, deps: Deps) -> TriageResult:
             run_id=deps.tracer.run_id, status="rejected", llm_mode=deps.llm.mode,
             alert_id=alert.get("alert_id") or (raw.get("alert_id") if isinstance(raw.get("alert_id"), str) else None),
             campaign_id=alert.get("campaign_id"), rejection=state["rejection"],
-            guardrail_flags=state.get("flags", []),
+            guardrail_flags=state.get("flags", []), stop_reason="input rejected before any tool ran",
         )
         result.summary = _summary(result)
         return result
@@ -343,7 +399,8 @@ def _build_result(state: State, deps: Deps) -> TriageResult:
         alert_id=alert["alert_id"], campaign_id=alert["campaign_id"], campaign_name=state["campaign"]["name"],
         root_cause=verdict.root_cause, severity=verdict.severity, confidence=verdict.confidence,
         needs_human_review=verdict.needs_human_review, reasons=verdict.reasons,
-        other_findings=verdict.other_findings, recommended_actions=verdict.recommended_actions,
+        findings=verdict.findings, other_findings=verdict.other_findings, stop_reason=verdict.stop_reason,
+        llm_usage=_llm_usage(deps.tracer), recommended_actions=verdict.recommended_actions,
         est_revenue_loss_per_hour_usd=verdict.est_revenue_loss_per_hour_usd,
         llm_hypothesis=state.get("llm_hypothesis"),
         kpi=evidence.get("kpi_snapshot", {}),
@@ -363,7 +420,7 @@ def run_triage(raw_alert: Any, *, llm: LLM | None = None, ds: DataSource | None 
                settings: Settings = SETTINGS, sleep: Callable[[float], None] = time.sleep) -> TriageResult:
     """Run one alert through the workflow. Never raises on bad input: it returns a rejected result."""
     deps = Deps(
-        ds=ds or DataSource(settings.world_path),
+        ds=ds or make_datasource(settings),
         incidents=incidents or IncidentStore(settings.db_path),
         llm=llm or make_llm(settings=settings),
         tracer=tracer or Tracer(settings.runs_dir),
@@ -371,6 +428,9 @@ def run_triage(raw_alert: Any, *, llm: LLM | None = None, ds: DataSource | None 
         sleep=sleep,
         fallback=OfflineLLM(settings),
     )
+    if hasattr(deps.llm, "observer"):
+        tracer_ref = deps.tracer
+        deps.llm.observer = lambda record: tracer_ref.event("llm_call", **record)
     deps.tracer.event("run_start", llm_mode=deps.llm.mode,
                       alert_id=raw_alert.get("alert_id") if isinstance(raw_alert, dict) else None)
     try:

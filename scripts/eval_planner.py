@@ -44,6 +44,9 @@ def run_mode(spec: str) -> dict:
             tool_calls += len(result["steps"])
             fallbacks += "planner_fallback_used" in result["guardrail_flags"]
             hyp_agree += result["llm_hypothesis"] == result["root_cause"]
+            if spec != "offline" and result["llm_hypothesis"] != result["root_cause"]:
+                misses.append(f"{path.stem}: model hypothesis {result['llm_hypothesis']!r}, "
+                              f"rules verdict {result['root_cause']!r} (verdict unchanged, run flagged for review)")
             llm_failures += any(flag in result["guardrail_flags"]
                                 for flag in ("hypothesis_unavailable", "analyst_note_unavailable"))
     seconds = time.perf_counter() - started
@@ -83,7 +86,7 @@ def main() -> None:
             print(f"| {metric} | " + " | ".join(m[metric] for m in modes.values()) + " |")
     for name, mode in modes.items():
         for miss in mode["_misses"]:
-            print(f"\n[{name}] disagreement: {miss}")
+            print(f"\n[{name}] note: {miss}")
 
 
 if __name__ == "__main__":

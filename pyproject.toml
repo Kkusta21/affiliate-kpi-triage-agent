@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "affiliate-kpi-triage-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI agent that triages KPI drops on affiliate campaigns: finds the root cause, opens an incident and drafts the alert."
 requires-python = ">=3.10"
 dependencies = [
@@ -12,11 +12,12 @@ dependencies = [
   "pydantic>=2.6",
   "fastapi>=0.110",
   "uvicorn>=0.29",
+  "httpx>=0.27",
 ]
 
 [project.optional-dependencies]
 llm = ["langchain>=0.3", "langchain-openai>=0.2", "langchain-anthropic>=0.2"]
-dev = ["pytest>=8", "httpx>=0.27"]
+dev = ["pytest>=8", "ruff>=0.6"]
 
 [project.scripts]
 triage = "triage_agent.cli:main"
@@ -26,6 +27,15 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 triage_agent = ["static/*.html"]
+
+[tool.ruff]
+line-length = 125
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
